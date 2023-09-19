@@ -102,7 +102,7 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
             rank=$i
             local_rank=$i
             gpu_id=$(echo $gpu_devices | cut -d',' -f$[$i+1])
-            gan_codec_train.py \
+            python -m funcodec.bin.gan_codec_train \
                 --gpu_id $gpu_id \
                 --use_preprocessor true \
                 --train_data_path_and_name_and_type ${feats_dir}/${dumpdir}/${train_set}/wav.scp,speech,kaldi_ark \
@@ -153,7 +153,7 @@ if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
         # shellcheck disable=SC2086
         utils/split_scp.pl "${key_file}" ${split_scps}
         ${infer_cmd} --gpu "${_ngpu}" --max-jobs-run "${_nj}" JOB=1:"${_nj}" "${_logdir}"/inference.JOB.log \
-            python -m funasr.bin.codec_inference \
+            python -m funcodec.bin.codec_inference \
                 --batch_size ${batch_size} \
                 --ngpu "${_ngpu}" \
                 --gpuid_list ${gpuid_list} \
@@ -243,7 +243,7 @@ if [ ${stage} -le 8 ] && [ ${stop_stage} -ge 8 ]; then
             rank=$i
             local_rank=$i
             gpu_id=$(echo $gpu_devices | cut -d',' -f$[$i+1])
-            gan_codec_train.py \
+            python -m funcodec.bin.gan_codec_train \
                 --gpu_id $gpu_id \
                 --use_preprocessor false \
                 --dataset_type large \

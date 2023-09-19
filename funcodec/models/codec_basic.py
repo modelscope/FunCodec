@@ -789,7 +789,6 @@ class Encodec(AbsGANESPnetModel):
         token_idx = token_idx.permute(2, 0, 1).unsqueeze(0)
         for tokens in token_idx:
             code_embs = self.quantizer.decode(tokens)
-            code_embs = self._expand_seq(code_embs, None)
             codes.append((code_embs.transpose(1, 2), None))
         recon_speech = None
         if need_recon:

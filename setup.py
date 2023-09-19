@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""FunASR setup script."""
+"""FunCodec setup script."""
 
 import os
 
@@ -43,9 +43,8 @@ requirements = {
         # PAI
         "oss2",
         # codec
-        "local-attention==1.8.4",
-        "einops==0.6.0",
-        "transformers==4.27.1",
+        "local-attention",
+        "einops",
         "thop==0.1.1.post2209072238",
         "alias-free-torch==0.0.6",
         "phaseaug==1.0.1"
@@ -128,10 +127,10 @@ with open(version_file, "r") as f:
 setup(
     name="funcodec",
     version=version,
-    url="https://github.com/alibaba-damo-academy/FunASR.git",
+    url="https://github.com/alibaba-damo-academy/FunCodec.git",
     author="Speech Lab, Alibaba Group, China",
     author_email="funcodec@list.alibaba-inc.com",
-    description="FunASR: A Fundamental End-to-End Speech Recognition Toolkit",
+    description="FunCodec: A Fundamental, Reproducible and Integrable Open-source Toolkit for Neural Speech Codec",
     long_description=open(os.path.join(dirname, "README.md"), encoding="utf-8").read(),
     long_description_content_type="text/markdown",
     license="The MIT License",

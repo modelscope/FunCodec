@@ -35,12 +35,13 @@ else
     _ngpu=0
 fi
 
+mkdir -p exp
 # Downloading Stage
 if [ ${stage} -eq 0 ]; then
   echo "stage 0: downloading model"
   git lfs install
   git clone https://www.modelscope.cn/damo/${model_name}.git
-  mv ${model_name} exp/
+  mv ${model_name} exp/${model_name}
 fi
 
 # Encoding Stage
@@ -66,7 +67,7 @@ if [ ${stage} -eq 1 ]; then
     fi
     utils/split_scp.pl "${key_file}" ${split_scps}
     ${infer_cmd} --gpu "${_ngpu}" --max-jobs-run "${_nj}" JOB=1:"${_nj}" "${_logdir}"/inference.JOB.log \
-        python -m funasr.bin.codec_inference \
+        python -m funcodec.bin.codec_inference \
             --batch_size ${batch_size} \
             --num_workers ${num_workers} \
             --ngpu "${_ngpu}" \
@@ -83,6 +84,9 @@ if [ ${stage} -eq 1 ]; then
             --need_sub_quants false \
             --use_scale false  \
             --run_mod "encode"
+
+    cat ${_logdir}/output.*/codecs.txt > ${out_dir}/codecs.txt
+    echo "Codes are saved to ${_logdir}/output.*/codecs.txt and collected to ${out_dir}/codecs.txt."
 fi
 
 # Decoding Stage
@@ -108,7 +112,7 @@ if [ ${stage} -eq 2 ]; then
     fi
     utils/split_scp.pl "${key_file}" ${split_scps}
     ${infer_cmd} --gpu "${_ngpu}" --max-jobs-run "${_nj}" JOB=1:"${_nj}" "${_logdir}"/inference.JOB.log \
-        python -m funasr.bin.codec_inference \
+        python -m funcodec.bin.codec_inference \
             --batch_size ${batch_size} \
             --num_workers ${num_workers} \
             --ngpu "${_ngpu}" \
@@ -125,6 +129,8 @@ if [ ${stage} -eq 2 ]; then
             --need_sub_quants false \
             --use_scale false  \
             --run_mod "decode"
+
+    echo "Waveforms are reconstructed to ${_logdir}/output.*/*.wav."
 fi
 
 # Decoding Stage
@@ -150,7 +156,7 @@ if [ ${stage} -eq 3 ]; then
     fi
     utils/split_scp.pl "${key_file}" ${split_scps}
     ${infer_cmd} --gpu "${_ngpu}" --max-jobs-run "${_nj}" JOB=1:"${_nj}" "${_logdir}"/inference.JOB.log \
-        python -m funasr.bin.codec_inference \
+        python -m funcodec.bin.codec_inference \
             --batch_size ${batch_size} \
             --num_workers ${num_workers} \
             --ngpu "${_ngpu}" \

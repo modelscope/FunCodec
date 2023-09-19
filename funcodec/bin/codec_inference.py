@@ -274,11 +274,11 @@ def inference_modelscope(
 
         indices_writer = None
         if "need_indices" in kwargs and kwargs["need_indices"]:
-            indices_writer = open(os.path.join(output_path, "indices.txt"), "wt")
+            indices_writer = open(os.path.join(output_path, "codecs.txt"), "wt")
 
         sub_quants_writer = None
         if "need_sub_quants" in kwargs and kwargs["need_sub_quants"]:
-            outfile_path = os.path.join(output_path, "sub_quants")
+            outfile_path = os.path.join(output_path, "codec_emb")
             sub_quants_writer = kaldiio.WriteHelper("ark,scp,f:{}.ark,{}.scp".format(outfile_path, outfile_path))
 
         def write_indices(_key, _indices, batch_id=0, length=None):
