@@ -50,6 +50,7 @@ class CostumeQuantizer(torch.nn.Module):
         self.sampling_rate = sampling_rate
         self.bandwidth: tp.Optional[float] = None
         self.encoder_hop_length = encoder_hop_length
+        self.codebook_size = codebook_size
 
     def forward(
             self,
