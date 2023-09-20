@@ -121,8 +121,8 @@ class Speech2Token(nn.Module):
         elif run_mod == "decode_emb":
             ret_dict = self.model.inference_decoding_emb(*batch)
         else:
-            bit_per_quant = (self.model.quantizer.sampling_rate // self.model.quantizer.encoder_hop_length) * math.log2(self.model.quantizer.codebook_size)
-            nq = max(bit_width // bit_per_quant, 1)
+            bit_per_quant = (self.model.quantizer.sampling_rate // self.model.quantizer.encoder_hop_length) * int(math.log2(self.model.quantizer.codebook_size))
+            nq = int(max(bit_width // bit_per_quant, 1))
             batch[0] = batch[0][:, :, :nq]
             hint_once(f"use {batch[0].shape[-1]} quantizers.", "infer_quantizer_num")
             ret_dict = self.model.inference_decoding(*batch)
