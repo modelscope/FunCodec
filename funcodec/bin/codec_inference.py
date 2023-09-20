@@ -6,6 +6,7 @@ import argparse
 import logging
 import os
 import sys
+import math
 from pathlib import Path
 from typing import Any
 from typing import List
@@ -120,7 +121,8 @@ class Speech2Token(nn.Module):
         elif run_mod == "decode_emb":
             ret_dict = self.model.inference_decoding_emb(*batch)
         else:
-            nq = max(bit_width // 500, 1)
+            bit_per_quant = (self.model.quantizer.sampling_rate // self.model.quantizer.encoder_hop_length) * math.log2(self.model.quantizer.codebook_size)
+            nq = max(bit_width // bit_per_quant, 1)
             batch[0] = batch[0][:, :, :nq]
             hint_once(f"use {batch[0].shape[-1]} quantizers.", "infer_quantizer_num")
             ret_dict = self.model.inference_decoding(*batch)
@@ -346,10 +348,10 @@ def inference_modelscope(
                 recon_wav = None
                 if kwargs["run_mod"] in ["decode", "decode_emb"]:
                     codec_len = speech_length[i]
-                    ilen = codec_len * my_model.model.encoder.hop_length
+                    ilen = codec_len * my_model.model.quantizer.encoder_hop_length
                 else:
                     ilen = speech_length[i]
-                    codec_len = torch.ceil(ilen / my_model.model.encoder.hop_length).int().item()
+                    codec_len = torch.ceil(ilen / my_model.model.quantizer.encoder_hop_length).int().item()
                 if recon_speech is not None:
                     recon_wav = recon_speech[i].cpu()[:, :ilen]
                 item = {"key": key, "value": recon_wav}
