@@ -73,7 +73,7 @@ Please refer `egs/LibriTTS/codec/run.sh` to perform training.
 3. We borrowed a lot of code from [ESPnet](https://github.com/espnet/espnet). FunCodec follows up the training and finetuning pipelines of ESPnet.
 
 ## License
-This project is licensed under the [The MIT License](https://opensource.org/licenses/MIT). 
+This project is licensed under [The MIT License](https://opensource.org/licenses/MIT). 
 FunCodec also contains various third-party components and some code modified from other repos 
 under other open source licenses.
 
