@@ -74,6 +74,8 @@ def main(args):
             elif (np.max(np.abs(wav)) > 1.0) or args.force_rescale:
                 wav = wav / np.max(np.abs(wav)) * 0.9
         if out_dir is not None:
+            if uttid.endswith(".wav"):
+                uttid = uttid[:-4]
             out_path = os.path.join(out_dir, uttid + ".wav")
         else:
             out_path = wav_path.rsplit(".", 1)[0] + args.output_suffix + ".wav"

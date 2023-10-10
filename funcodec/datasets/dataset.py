@@ -254,17 +254,6 @@ DATA_TYPES = {
         "   utterance_id_B 10,4\n"
         "   ...",
     ),
-    "codec_row32": dict(
-        func=functools.partial(build_codec_loader, quant_groups=32, file_type="ark"),
-        kwargs=[],
-        help="",
-    ),
-    "jsonl_trans_int": dict(
-        func=load_jsonl_trans_int,
-        kwargs=[],
-        help="",
-    )
-
 }
 
 

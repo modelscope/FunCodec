@@ -1,0 +1,101 @@
+# This configuration is inspired by Encodec paper
+
+# input configs
+input_size: 2
+use_preprocessor: true      # use preprocessor to clip speech to target length
+speech_max_length: 40800    # in seconds
+valid_max_length: 40800        # in seconds
+sampling_rate: 16000
+
+# encoder
+encoder: encodec_seanet_encoder_2d
+encoder_conf:
+    ratios: [[4, 1], [4, 1], [4, 2], [4, 1]]
+    norm: time_group_norm
+    norm_params:
+        num_groups: 1
+    causal: false
+    dilation_base: 1
+
+# quantizer
+quantizer: costume_quantizer
+quantizer_conf:
+    codebook_size: 1024
+    num_quantizers: 32
+    ema_decay: 0.99
+    kmeans_init: true
+    sampling_rate: 16000
+    quantize_dropout: true
+    rand_num_quant: [1, 2, 4, 8, 16, 32]
+    use_ddp: true
+
+# decoder
+decoder: encodec_seanet_decoder_2d
+decoder_conf:
+    ratios: [[4, 1], [4, 1], [4, 2], [4, 1]]
+    norm: time_group_norm
+    norm_params:
+        num_groups: 1
+    causal: false
+    channels: 2
+    dilation_base: 1
+
+# discriminator
+discriminator: multiple_disc
+discriminator_conf:
+    disc_conf_list:
+        - name: encodec_multi_scale_stft_discriminator
+          filters: 32
+
+# model
+model: encodec
+model_conf:
+    odim: 128
+    multi_spectral_window_powers_of_two: [5, 6, 7, 8, 9, 10]
+    target_sample_hz: 16000
+    audio_normalize: true
+    use_power_spec_loss: true
+    segment_dur: null
+    overlap_ratio: null
+    codec_domain: ['mag_angle', 'mag_angle']
+
+# optimizer for generator
+optim: adam            # optimizer type
+optim_conf:             # keyword arguments for selected optimizer
+    lr: 0.0003          # learning rate, the dot is necessary to make yaml load it as float not string
+    betas: [0.5, 0.9]
+
+# optimizer for discriminator
+optim2: adam             # optimizer type
+optim2_conf:              # keyword arguments for selected optimizer
+    lr: 0.0003              # learning rate
+    betas: [0.5, 0.9]
+
+# training settings
+num_iters_per_epoch: 10000 # number of iterations per epoch
+max_epoch: 60            # number of epochs
+accum_grad: 1             # gradient accumulation
+batch_size: 16            # batch size (feats_type=raw)
+drop_last: true           # drop last batch
+batch_type: unsorted      # how to make batch
+grad_clip: -1             # gradient clipping norm
+disc_grad_clip: -1        # gradient clipping norm
+grad_noise: false         # whether to use gradient noise injection
+sort_in_batch: descending # how to sort data in making batch
+sort_batch: descending    # how to sort created batches
+num_workers: 8           # number of workers of data loader
+use_amp: false            # whether to use pytorch amp
+log_interval: 50          # log interval in iterations
+keep_nbest_models: 60   # number of models to keep
+num_att_plot: 0           # number of attention figures to be saved in every check
+seed: 0                   # random seed number
+patience: null            # patience for early stopping
+unused_parameters: true   # needed for multi gpu case
+best_model_criterion:     # criterion to save the best models
+-   - valid
+    - generator_multi_spectral_recon_loss
+    - min
+cudnn_deterministic: false # setting to false accelerates the training speed but makes it non-deterministic
+                           # in the case of GAN-TTS training, we strongly recommend setting to false
+cudnn_benchmark: false     # setting to true might acdelerate the training speed but sometimes decrease it
+                           # therefore, we set to false as a default (recommend trying both cases)

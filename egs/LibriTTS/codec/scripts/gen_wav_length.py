@@ -1,7 +1,7 @@
 """
 Author: Zhihao Du
 Date: 2023.03.29
-Description: Convert wav, flac and ark files to mono waveform files with given sampling rate.
+Description: Collect the length of files in wav, flac and ark files.
 """
 import logging
 import warnings

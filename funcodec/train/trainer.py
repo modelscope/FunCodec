@@ -29,8 +29,8 @@ import torch.optim
 from typeguard import check_argument_types
 
 from funcodec.iterators.abs_iter_factory import AbsIterFactory
-from funcodec.main_funcs.average_nbest_models import average_nbest_models
-from funcodec.main_funcs.calculate_all_attentions import calculate_all_attentions
+from funcodec.util_funcs.average_nbest_models import average_nbest_models
+from funcodec.util_funcs.calculate_all_attentions import calculate_all_attentions
 from funcodec.schedulers.abs_scheduler import AbsBatchStepScheduler
 from funcodec.schedulers.abs_scheduler import AbsEpochStepScheduler
 from funcodec.schedulers.abs_scheduler import AbsScheduler
