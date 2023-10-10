@@ -1,10 +1,8 @@
+# This script dumps waveforms to wav-copy format wav ark, including sample rate and int16 sequence.
 """
 Author: Zhihao Du
 Date: 2023.03.29
-Description: Preprocess waveform files and dump them to ark file for training
-- Filter out not-wav files
-- Resample rate to 16k
-- Dump data to ark files
+Description: Convert wav, flac and ark files to mono waveform files with given sampling rate.
 """
 import logging
 import warnings
@@ -16,6 +14,7 @@ import numpy as np
 from funcodec.utils.misc import get_logger
 import kaldiio
 import librosa
+import soundfile
 
 
 def main(args):
@@ -27,12 +26,13 @@ def main(args):
     logger.info("rank {}/{}: Sample rate {}, sample bits {}, out_dir {}.".format(
         rank, threads_num, sr, sample_bits, out_dir
     ))
-    if rank == 0:
-        if not os.path.exists(out_dir):
-            os.makedirs(out_dir)
-    else:
-        while not os.path.exists(out_dir):
-            time.sleep(0.5)
+    if out_dir is not None:
+        if rank == 0:
+            if not os.path.exists(out_dir):
+                os.makedirs(out_dir)
+        else:
+            while not os.path.exists(out_dir):
+                time.sleep(0.5)
 
     all_recs = []
     if args.wav_scp is not None and len(args.wav_scp) > 0:
@@ -48,22 +48,35 @@ def main(args):
     all_recs.sort(key=lambda x: x[0])
     local_all_recs = all_recs[rank::threads_num]
 
-    outfile_path = os.path.join(out_dir, "wav.{}".format(rank))
-    wav_writer = kaldiio.WriteHelper("ark,scp,f:{}.ark,{}.scp".format(outfile_path, outfile_path))
-    outfile_path = os.path.join(out_dir, "length.{}.txt".format(rank))
-    length_writer = open(outfile_path, "wt")
-
+    out_path = os.path.join(out_dir, f"wav.{rank:02d}")
+    wav_writer = kaldiio.WriteHelper(f"ark,scp,f:{out_path}.ark,{out_path}.scp")
+    out_path = os.path.join(out_dir, f"length.{rank:02d}.txt")
+    length_writer = open(out_path, "wt")
     meeting_count = 0
     for i, (uttid, wav_path) in enumerate(local_all_recs):
+        sr, sample_bits = args.sample_rate, 16
         # skip files not ending with wav
-        if not wav_path.lower().endswith(".wav"):
-            logger.warning("rank {}/{}: Skip {} since {} file format is not wav.".format(
+        if not wav_path.lower().endswith(".wav") and \
+                not wav_path.lower().endswith(".flac") and \
+                not (".ark" in wav_path.lower() and ":" in wav_path):
+            logger.warning("rank {}/{}: Skip {} since {} file format is not wav or flac or ark.".format(
                 rank, threads_num, uttid, wav_path
             ))
             continue
-        # Use librosa to deal with multi-channels and different sampling rate
-        wav, sr = librosa.load(wav_path, dtype=np.float32, sr=sr, mono=True)
-        wav_writer(uttid, wav)
+        if not (".ark" in wav_path.lower() and ":" in wav_path):
+            # Use librosa to deal with multi-channels and different sampling rate
+            wav, sr = librosa.load(wav_path, dtype=np.float32, sr=sr, mono=True)
+        else:
+            wav = kaldiio.load_mat(wav_path)
+            if isinstance(wav, tuple):
+                if isinstance(wav[0], int):
+                    sr, wav = wav
+                else:
+                    wav, sr = wav
+            if (np.max(np.abs(wav)) > 1.0) or args.force_rescale:
+                wav = wav / np.max(np.abs(wav)) * 0.9
+
+        wav_writer(uttid, (sr, (wav * (2**15)).astype(np.int16)))
         length_writer.write("{} {}\n".format(uttid, len(wav)))
 
         if i % 100 == 0:
@@ -91,11 +104,19 @@ if __name__ == "__main__":
                         help="local rank of gpu")
     parser.add_argument('--out_dir',
                         type=str,
-                        default="",
+                        default=None,
                         help="The output dir to save rttms and wavs")
     parser.add_argument('--sample_rate',
                         type=int,
                         default=16_000,
                         help="The expected sample rate.")
+    parser.add_argument("--output_suffix",
+                        type=str,
+                        default="",
+                        help="The suffix added to the end of file name.")
+    parser.add_argument("--force_rescale",
+                        type=bool,
+                        default=False,
+                        help="force rescale")
     args = parser.parse_args()
     main(args)
