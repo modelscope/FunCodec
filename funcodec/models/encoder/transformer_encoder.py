@@ -9,10 +9,7 @@ from typing import Tuple
 
 import torch
 from torch import nn
-from typeguard import check_argument_types
 import logging
-
-from funcodec.models.ctc import CTC
 from funcodec.models.encoder.abs_encoder import AbsEncoder
 from funcodec.modules.attention import MultiHeadedAttention
 from funcodec.modules.embedding import PositionalEncoding
@@ -190,7 +187,6 @@ class TransformerEncoder(AbsEncoder):
             interctc_use_conditioning: bool = False,
             causal_mode: str = "None",
     ):
-        assert check_argument_types()
         super().__init__()
         self._output_size = output_size
         self.causal_mode = causal_mode
@@ -279,7 +275,7 @@ class TransformerEncoder(AbsEncoder):
             xs_pad: torch.Tensor,
             ilens: torch.Tensor,
             prev_states: torch.Tensor = None,
-            ctc: CTC = None,
+            ctc = None,
     ) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """Embed positions in tensor.
 

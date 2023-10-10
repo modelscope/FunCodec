@@ -1,3 +1,4 @@
+# This script dumps waveforms to wav-copy format wav ark, including sample rate and int16 sequence.
 """
 Author: Zhihao Du
 Date: 2023.03.29
@@ -47,8 +48,13 @@ def main(args):
     all_recs.sort(key=lambda x: x[0])
     local_all_recs = all_recs[rank::threads_num]
 
+    out_path = os.path.join(out_dir, f"wav.{rank:02d}")
+    wav_writer = kaldiio.WriteHelper(f"ark,scp,f:{out_path}.ark,{out_path}.scp")
+    out_path = os.path.join(out_dir, f"length.{rank:02d}.txt")
+    length_writer = open(out_path, "wt")
     meeting_count = 0
     for i, (uttid, wav_path) in enumerate(local_all_recs):
+        sr, sample_bits = args.sample_rate, 16
         # skip files not ending with wav
         if not wav_path.lower().endswith(".wav") and \
                 not wav_path.lower().endswith(".flac") and \
@@ -67,27 +73,18 @@ def main(args):
                     sr, wav = wav
                 else:
                     wav, sr = wav
-            if wav.dtype == np.int16:
-                wav = wav.astype(np.float) / (2 ** 15)
-            elif wav.dtype == np.int32:
-                wav = wav.astype(np.float) / (2 ** 31)
-            elif (np.max(np.abs(wav)) > 1.0) or args.force_rescale:
+            if (np.max(np.abs(wav)) > 1.0) or args.force_rescale:
                 wav = wav / np.max(np.abs(wav)) * 0.9
-        if out_dir is not None:
-            if uttid.endswith(".wav"):
-                uttid = uttid[:-4]
-            out_path = os.path.join(out_dir, uttid + ".wav")
-        else:
-            out_path = wav_path.rsplit(".", 1)[0] + args.output_suffix + ".wav"
-        soundfile.write(out_path,
-                        (wav * (2**15)).astype(np.int16),
-                        sr, "PCM_16", "LITTLE", "WAV", True)
+
+        wav_writer(uttid, (sr, (wav * (2**15)).astype(np.int16)))
+        length_writer.write("{} {}\n".format(uttid, len(wav)))
 
         if i % 100 == 0:
             logger.info("{}/{}: process {}.".format(rank, threads_num, uttid))
 
         meeting_count += 1
 
+    wav_writer.close()
     logger.info("{}/{}: Complete {} records.".format(rank, threads_num, meeting_count))
 
 

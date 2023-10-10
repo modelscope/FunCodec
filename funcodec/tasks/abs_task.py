@@ -43,7 +43,7 @@ from funcodec.iterators.abs_iter_factory import AbsIterFactory
 from funcodec.iterators.chunk_iter_factory import ChunkIterFactory
 from funcodec.iterators.multiple_iter_factory import MultipleIterFactory
 from funcodec.iterators.sequence_iter_factory import SequenceIterFactory
-from funcodec.main_funcs.collect_stats import collect_stats
+from funcodec.util_funcs.collect_stats import collect_stats
 from funcodec.optimizers.sgd import SGD
 from funcodec.optimizers.fairseq_adam import FairseqAdam
 from funcodec.samplers.build_batch_sampler import BATCH_TYPES

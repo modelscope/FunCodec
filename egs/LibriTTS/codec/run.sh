@@ -10,12 +10,10 @@ count=1
 # general configuration
 feats_dir="." #feature output dictionary
 exp_dir="."
-lang=en
-dumpdir=dump/raw
-feats_type=raw
-stage=3
+dumpdir=dump/LibriTTS
+stage=0
 stop_stage=3
-train_cmd=utils/run.pl
+corpus_dir=corpus/LibriTTS
 
 # training related
 tag=""
@@ -23,13 +21,13 @@ train_set=train
 valid_set=dev
 train_config=conf/encodec_lstm_16k_n32_600k_step_rmseg.yaml
 init_param=
-state_dir=tokenizer_states_16k
+state_dir=LibriTTS_states
 
 # inference related
 inference_model=30epoch.pth
 inference_tag="inference"
 batch_size=1
-test_sets="test"
+test_sets="test-clean"
 gpu_inference=true  # Whether to perform gpu decoding, set false for cpu decoding
 need_indices=false
 need_sub_quants=false
@@ -53,7 +51,7 @@ set -u
 set -o pipefail
 
 if [ -z "${model_dir}" ]; then
-  model_dir="$(basename "${train_config}" .yaml)_${feats_type}_${lang}${tag}"
+  model_dir="$(basename "${train_config}" .yaml)${tag}"
 fi
 
 # you can set gpu num for decoding here
@@ -68,14 +66,90 @@ else
     _ngpu=0
 fi
 
-feat_train_dir=${feats_dir}/${dumpdir}/train; mkdir -p ${feat_train_dir}
-feat_dev_dir=${feats_dir}/${dumpdir}/dev; mkdir -p ${feat_dev_dir}
-feat_test_dir=${feats_dir}/${dumpdir}/test; mkdir -p ${feat_test_dir}
+# Data downloading
+if [ ${stage} -le 0 ] && [ ${stop_stage} -ge 0 ]; then
+  echo "Stage 0: data downloading"
+
+  if [ ! -d ${corpus_dir} ]; then
+    mkdir -p ${corpus_dir}
+  fi
+
+  echo "download training set to ${corpus_dir}"
+  wget --no-check-certificate https://www.openslr.org/resources/60/train-clean-100.tar.gz -P ${corpus_dir}/
+  wget --no-check-certificate https://www.openslr.org/resources/60/train-clean-360.tar.gz -P ${corpus_dir}/
+  wget --no-check-certificate https://www.openslr.org/resources/60/train-other-500.tar.gz -P ${corpus_dir}/
+
+  echo "download dev set to ${corpus_dir}"
+  wget --no-check-certificate https://www.openslr.org/resources/60/dev-clean.tar.gz -P ${corpus_dir}/
+  wget --no-check-certificate https://www.openslr.org/resources/60/dev-other.tar.gz -P ${corpus_dir}/
+
+  echo "download test set to ${corpus_dir}"
+  wget --no-check-certificate https://www.openslr.org/resources/60/test-clean.tar.gz -P ${corpus_dir}/
+  wget --no-check-certificate https://www.openslr.org/resources/60/test-other.tar.gz -P ${corpus_dir}/
+
+  cd ${corpus_dir}/
+  tar zxf train-clean-100.tar.gz train-clean-360.tar.gz train-other-500.tar.gz
+  tar zxf dev-clean.tar.gz dev-other.tar.gz
+  tar zxf test-clean.tar.gz test-other.tar.gz
+
+  # remove the duplicated LibriTTS directory
+  mv ${corpus_dir}/LibriTTS/* ${corpus_dir}/
+  rm -rf ${corpus_dir}/LibriTTS
+fi
+
+# Data collecting
+if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
+  echo "Stage 1: collecting data sets."
+  mkdir -p ${dumpdir}/train_24k ${dumpdir}/dev_24k
+
+  for name in train-clean-100 train-clean-360 train-other-500; do
+    echo "collecting ${name} in to ${dumpdir}/train_24k/wav.scp"
+    find ${corpus_dir}/${name}/ -iname "*.wav" | awk -F '/' '{print $NF, $0}' | sort >> ${dumpdir}/train_24k/wav.scp
+  done
+
+  for name in dev-clean dev-other; do
+    echo "collecting ${name} in to ${dumpdir}/dev_24k/wav.scp"
+    find ${corpus_dir}/${name}/ -iname "*.wav" | awk -F '/' '{print $NF, $0}' | sort >> ${dumpdir}/dev_24k/wav.scp
+  done
+
+  for name in test-clean test-other; do
+    mkdir -p ${dumpdir}/${name}_24k
+    echo "collecting ${name} in to ${dumpdir}/${name}_24k/wav.scp"
+    find ${corpus_dir}/${name}/ -iname "*.wav" | awk -F '/' '{print $NF, $0}' | sort > ${dumpdir}/${name}_24k/wav.scp
+  done
+fi
+
+# Dump data to ark and convert it to the sampling rate of 16000
+if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
+  echo "Stage 2: Dump data to ark."
+  for name in train dev; do
+    echo "Dump ${name} set to ark files ${dumpdir}/${name}/arks/wav.*.ark"
+    torchrun --nproc_per_node=32 --master_port=1234 scripts/dump_to_wav_ark.py \
+      --wav_scp ${dumpdir}/${name}_24k/wav.scp \
+      --out_dir ${dumpdir}/${name}/arks \
+      --sample_rate 16000
+
+    mkdir -p ${dumpdir}/${name} exp/${state_dir}/${name}
+    cat ${dumpdir}/${name}/arks/wav.*.scp | sort > ${dumpdir}/${name}/wav.scp
+    cat ${dumpdir}/${name}/arks/length.*.txt | shuf > exp/${state_dir}/${name}/speech_shape
+  done
+
+  for name in test-clean test-other; do
+    echo "Resample ${name} set to ${dumpdir}/${name}/wavs/*.wav"
+    torchrun --nproc_per_node=32 --master_port=1234 scripts/convert_to_wav.py \
+      --wav_scp ${dumpdir}/${name}_24k/wav.scp \
+      --out_dir ${dumpdir}/${name}/wavs \
+      --sample_rate 16000
+
+    mkdir -p ${dumpdir}/${name}
+    find ${dumpdir}/${name}/wavs/ -iname "*.wav" | awk -F '/' '{print $NF, $0}' | sort >> ${dumpdir}/${name}/wav.scp
+  done
+fi
 
 # Training Stage
 world_size=$gpu_num  # run on one machine
 if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
-    echo "stage 3: Training phase1"
+    echo "stage 3: Training"
     mkdir -p ${exp_dir}/exp/${model_dir}
     mkdir -p ${exp_dir}/exp/${model_dir}/log
     INIT_FILE=${exp_dir}/exp/${model_dir}/ddp_init
@@ -96,13 +170,13 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
     fi
 
     init_method=file://$(readlink -f $INIT_FILE)
-    echo "$0: init method is $init_method"
+    echo "log can be found at ${exp_dir}/exp/${model_dir}/log/train.log.0"
     for ((i = 0; i < $gpu_num; ++i)); do
         {
             rank=$i
             local_rank=$i
             gpu_id=$(echo $gpu_devices | cut -d',' -f$[$i+1])
-            python -m funcodec.bin.gan_codec_train \
+            python -m funcodec.bin.codec_train \
                 --gpu_id $gpu_id \
                 --use_preprocessor true \
                 --train_data_path_and_name_and_type ${feats_dir}/${dumpdir}/${train_set}/wav.scp,speech,kaldi_ark \
@@ -243,7 +317,7 @@ if [ ${stage} -le 8 ] && [ ${stop_stage} -ge 8 ]; then
             rank=$i
             local_rank=$i
             gpu_id=$(echo $gpu_devices | cut -d',' -f$[$i+1])
-            python -m funcodec.bin.gan_codec_train \
+            python -m funcodec.bin.codec_train \
                 --gpu_id $gpu_id \
                 --use_preprocessor false \
                 --dataset_type large \

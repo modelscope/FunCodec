@@ -3,7 +3,6 @@ from typing import Optional
 from typing import Tuple
 import torch
 from typeguard import check_argument_types
-from funcodec.models.ctc import CTC
 from funcodec.models.encoder.abs_encoder import AbsEncoder
 from funcodec.modules.attention import MultiHeadedAttention
 from funcodec.modules.embedding import PositionalEncoding

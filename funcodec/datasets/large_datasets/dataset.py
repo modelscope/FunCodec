@@ -30,8 +30,10 @@ def read_lists(list_file):
 
 
 class AudioDataset(IterableDataset):
-    def __init__(self, scp_lists, data_names, data_types, frontend_conf=None, shuffle=True, speed_perturb=None,
-                 mode="train"):
+    def __init__(self,
+                 scp_lists, data_names, data_types,
+                 frontend_conf=None, shuffle=True,
+                 speed_perturb=None, mode="train"):
         self.scp_lists = scp_lists
         self.data_names = data_names
         self.data_types = data_types
@@ -104,11 +106,10 @@ class AudioDataset(IterableDataset):
 
             reader_list = []
             for data_file, data_type in zip(data_file_list, data_type_list):
-                if data_type in ["kaldi_ark", "codec_row32", "wav_ark"]:
+                if data_type in ["kaldi_ark", "wav_ark"]:
                     ark_reader = ReadHelper('ark:{}'.format(data_file))
                     reader_list.append(ark_reader)
-                elif data_type in ["text", "sound", "text_hotword",
-                                   "codec", "jsonl_trans"]:
+                elif data_type in ["text", "sound", "codec"]:
                     text_reader = open(data_file, "r")
                     reader_list.append(text_reader)
                 elif data_type == "none":
@@ -121,10 +122,7 @@ class AudioDataset(IterableDataset):
                 for item, (data_name, data_type) in zip(items, zip(data_name_list, data_type_list)):
                     if data_name == "speech":
                         sample_dict["key"] = item[0]
-                    if data_type == "kaldi_ark":
-                        key, mat = item
-                        sample_dict[data_name] = mat
-                    elif data_type == "wav_ark":
+                    if data_type in ["kaldi_ark", "wav_ark"]:
                         key, mat = item
                         sr = 16000
                         if isinstance(mat, tuple):
@@ -138,14 +136,6 @@ class AudioDataset(IterableDataset):
                             mat = (mat / (2 ** 31)).astype(np.float32)
                         sample_dict["sampling_rate"] = sr
                         sample_dict[data_name] = mat
-                    elif data_type == "codec_row32":
-                        key, mat = item
-                        mat = np.reshape(mat, [32, -1]).T
-                        sample_dict[data_name] = mat
-                    elif data_type == "jsonl_trans":
-                        key, json_str = item.strip().split(maxsplit=1)
-                        json_data = json.loads(json_str)
-                        sample_dict[data_name] = json_data["trans"]
                     elif data_type == "sound":
                         key, path = item.strip().split()
                         waveform, sampling_rate = torchaudio.load(path)
@@ -166,13 +156,6 @@ class AudioDataset(IterableDataset):
                         sample_dict["sampling_rate"] = sampling_rate
                         if data_name == "speech":
                             sample_dict["key"] = key
-                    elif data_type == "text_hotword":
-                        text = item
-                        segs = text.strip().split()
-                        sample_dict[data_name] = segs[1:]
-                        if "key" not in sample_dict:
-                            sample_dict["key"] = segs[0]
-                        sample_dict['hw_tag'] = 1
                     elif data_type == "text_nospace":
                         text = item
                         segs = text.strip().split(maxsplit=1)
@@ -203,12 +186,13 @@ def len_fn_token(data):
     else:
         return data["text"].shape[0]
 
+
 def len_fn_token_speech_text(data):
     return data["speech"].shape[0] + data["text"].shape[0]
 
 
 def Dataset(data_list_file,
-            dict,
+            vocab_dict,
             seg_dict,
             punc_dict,
             bpe_tokenizer,
@@ -223,38 +207,27 @@ def Dataset(data_list_file,
     data_types = conf.get("data_types", "kaldi_ark,text")
     speech_clip_conf = conf.get("speech_clip_conf", None)
 
-    pre_hwfile = conf.get("pre_hwlist", None)
-    pre_prob = conf.get("pre_prob", 0)  # unused yet
-
-    hw_config = {"sample_rate": conf.get("sample_rate", 0.6),
-                 "double_rate": conf.get("double_rate", 0.1),
-                 "hotword_min_length": conf.get("hotword_min_length", 2),
-                 "hotword_max_length": conf.get("hotword_max_length", 8),
-                 "pre_prob": conf.get("pre_prob", 0.0)}
-
-    if pre_hwfile is not None:
-        pre_hwlist = []
-        with open(pre_hwfile, 'r') as fin:
-            for line in fin.readlines():
-                pre_hwlist.append(line.strip())
-    else:
-        pre_hwlist = None
-
-    dataset = AudioDataset(scp_lists,
-                           data_names,
-                           data_types,
-                           frontend_conf=frontend_conf,
-                           shuffle=shuffle,
-                           speed_perturb=speed_perturb,
-                           mode=mode,
-                           )
+    dataset = AudioDataset(
+        scp_lists,
+        data_names,
+        data_types,
+        frontend_conf=frontend_conf,
+        shuffle=shuffle,
+        speed_perturb=speed_perturb,
+        mode=mode
+    )
 
     filter_conf = conf.get('filter_conf', {})
     filter_fn = partial(filter, **filter_conf)
     dataset = FilterIterDataPipe(dataset, fn=filter_fn)
 
     if "text" in data_names:
-        vocab = {'vocab': dict, 'seg_dict': seg_dict, 'punc_dict': punc_dict, 'bpe_tokenizer': bpe_tokenizer, 'hw_config': hw_config}
+        vocab = dict(
+            vocab=vocab_dict,
+            seg_dict=seg_dict,
+            punc_dict=punc_dict,
+            bpe_tokenizer=bpe_tokenizer,
+        )
         tokenize_fn = partial(tokenize, **vocab)
         dataset = MapperIterDataPipe(dataset, fn=tokenize_fn)
 
@@ -278,10 +251,7 @@ def Dataset(data_list_file,
     if batch_type == 'example':
         len_fn = len_fn_example
     else:
-        if ("llm_json_sft_v3" in data_names.split(",") or
-            "llm_enc_json_sft" in data_names.split(",") or
-            batch_type == "token_speech_text"
-        ):
+        if batch_type == "token_speech_text":
             logging.info("using both speech and text for computing batch")
             len_fn = len_fn_token_speech_text
         else:

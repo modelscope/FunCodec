@@ -23,6 +23,7 @@ from funcodec.datasets.dataset import ESPnetDataset
 
 SUPPORT_AUDIO_TYPE_SETS = ['flac', 'mp3', 'ogg', 'opus', 'wav', 'pcm']
 
+
 def load_kaldi(input):
     retval = kaldiio.load_mat(input)
     if isinstance(retval, tuple):
@@ -57,12 +58,6 @@ def load_codec_json(json_str):
     return array.T
 
 
-def load_jsonl_trans(json_str):
-    data = json.loads(json_str)
-    arr = np.array(data["trans"])
-    return arr
-
-
 def load_bytes(input):
     middle_data = np.frombuffer(input, dtype=np.int16)
     middle_data = np.asarray(middle_data)
@@ -78,10 +73,12 @@ def load_bytes(input):
     array = np.frombuffer((middle_data.astype(dtype) - offset) / abs_max, dtype=np.float32)
     return array
 
+
 def load_pcm(input):
     with open(input,"rb") as f:
         bytes = f.read()
     return load_bytes(bytes)
+
 
 DATA_TYPES = {
     "sound": lambda x: torchaudio.load(x)[0][0].numpy(),
@@ -102,8 +99,6 @@ DATA_TYPES = {
     ),
     "text": lambda x: x,
     "codec_json": load_codec_json,
-    "codec_json_llm": load_codec_json,
-    "trans_jsonl": load_jsonl_trans,
 }
 
 
