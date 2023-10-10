@@ -10,7 +10,7 @@ sampling_rate: 16000
 # encoder
 encoder: encodec_seanet_encoder
 encoder_conf:
-    norm: time_group_norm
+    norm: weight_norm
     causal: true
     n_residual_layers: 3
     dimension: 512
@@ -31,7 +31,7 @@ quantizer_conf:
 # decoder
 decoder: encodec_seanet_decoder
 decoder_conf:
-    norm: time_group_norm
+    norm: weight_norm
     causal: true
     n_residual_layers: 3
     seq_model: none

@@ -51,7 +51,7 @@ set -u
 set -o pipefail
 
 if [ -z "${model_dir}" ]; then
-  model_dir="$(basename "${train_config}" .yaml)_${tag}"
+  model_dir="$(basename "${train_config}" .yaml)${tag}"
 fi
 
 # you can set gpu num for decoding here
@@ -170,7 +170,7 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
     fi
 
     init_method=file://$(readlink -f $INIT_FILE)
-    echo "$0: init method is $init_method"
+    echo "log can be found at ${exp_dir}/exp/${model_dir}/log/train.log.0"
     for ((i = 0; i < $gpu_num; ++i)); do
         {
             rank=$i

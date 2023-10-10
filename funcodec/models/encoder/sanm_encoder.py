@@ -7,7 +7,6 @@ import logging
 import torch
 import torch.nn as nn
 from funcodec.modules.streaming_utils.chunk_utilis import overlap_chunk
-from typeguard import check_argument_types
 import numpy as np
 from funcodec.modules.nets_utils import make_pad_mask
 from funcodec.modules.attention import MultiHeadedAttention, MultiHeadedAttentionSANM
@@ -25,7 +24,6 @@ from funcodec.modules.subsampling import Conv2dSubsampling6
 from funcodec.modules.subsampling import Conv2dSubsampling8
 from funcodec.modules.subsampling import TooShortUttError
 from funcodec.modules.subsampling import check_short_utt
-from funcodec.models.ctc import CTC
 from funcodec.models.encoder.abs_encoder import AbsEncoder
 
 
@@ -148,7 +146,6 @@ class SANMEncoder(AbsEncoder):
         tf2torch_tensor_name_prefix_torch: str = "encoder",
         tf2torch_tensor_name_prefix_tf: str = "seq2seq/encoder",
     ):
-        assert check_argument_types()
         super().__init__()
         self._output_size = output_size
 
@@ -281,7 +278,7 @@ class SANMEncoder(AbsEncoder):
         xs_pad: torch.Tensor,
         ilens: torch.Tensor,
         prev_states: torch.Tensor = None,
-        ctc: CTC = None,
+        ctc = None,
     ) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """Embed positions in tensor.
 
@@ -543,7 +540,6 @@ class SANMEncoderChunkOpt(AbsEncoder):
             tf2torch_tensor_name_prefix_torch: str = "encoder",
             tf2torch_tensor_name_prefix_tf: str = "seq2seq/encoder",
     ):
-        assert check_argument_types()
         super().__init__()
         self._output_size = output_size
 
@@ -683,7 +679,7 @@ class SANMEncoderChunkOpt(AbsEncoder):
             xs_pad: torch.Tensor,
             ilens: torch.Tensor,
             prev_states: torch.Tensor = None,
-            ctc: CTC = None,
+            ctc = None,
             ind: int = 0,
     ) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """Embed positions in tensor.

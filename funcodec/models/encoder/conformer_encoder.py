@@ -11,9 +11,6 @@ from typing import Union
 
 import torch
 from torch import nn
-from typeguard import check_argument_types
-
-from funcodec.models.ctc import CTC
 from funcodec.models.encoder.abs_encoder import AbsEncoder
 from funcodec.modules.attention import (
     MultiHeadedAttention,  # noqa: H301
@@ -345,7 +342,6 @@ class ConformerEncoder(AbsEncoder):
             interctc_use_conditioning: bool = False,
             stochastic_depth_rate: Union[float, List[float]] = 0.0,
     ):
-        assert check_argument_types()
         super().__init__()
         self._output_size = output_size
 
@@ -543,7 +539,7 @@ class ConformerEncoder(AbsEncoder):
             xs_pad: torch.Tensor,
             ilens: torch.Tensor,
             prev_states: torch.Tensor = None,
-            ctc: CTC = None,
+            ctc = None,
     ) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """Calculate forward propagation.
 
@@ -931,7 +927,7 @@ class QuantizedConformerEncoder(AbsEncoder):
             xs_pad: torch.Tensor,
             ilens: torch.Tensor,
             prev_states: torch.Tensor = None,
-            ctc: CTC = None,
+            ctc = None,
     ) -> Tuple[torch.Tensor, torch.Tensor, Optional[dict]]:
         """Calculate forward propagation.
 
