@@ -1,10 +1,8 @@
-# This configuration is inspired by Encodec paper
-
 # input configs
 input_size: 3
 use_preprocessor: true      # use preprocessor to clip speech to target length
-speech_max_length: 40800    # in seconds
-valid_max_length: 40800        # in seconds
+speech_max_length: 40800    # in samples
+valid_max_length: 40800     # in samples
 sampling_rate: 16000
 
 # encoder
@@ -28,6 +26,7 @@ quantizer_conf:
     quantize_dropout: true
     rand_num_quant: [2, 4, 8, 16, 32]
     use_ddp: true
+    encoder_hop_length: 640
 
 # decoder
 decoder: encodec_seanet_decoder_2d
@@ -73,20 +72,20 @@ optim2_conf:              # keyword arguments for selected optimizer
 
 # training settings
 num_iters_per_epoch: 10000 # number of iterations per epoch
-max_epoch: 60            # number of epochs
+max_epoch: 60             # number of epochs
 accum_grad: 1             # gradient accumulation
 batch_size: 16            # batch size (feats_type=raw)
 drop_last: true           # drop last batch
 batch_type: unsorted      # how to make batch
 grad_clip: -1             # gradient clipping norm
-disc_grad_clip: -1        # gradient clipping norm
+disc_grad_clip: -1        # gradient clipping norm for discriminator
 grad_noise: false         # whether to use gradient noise injection
 sort_in_batch: descending # how to sort data in making batch
 sort_batch: descending    # how to sort created batches
-num_workers: 8           # number of workers of data loader
+num_workers: 8            # number of workers of data loader
 use_amp: false            # whether to use pytorch amp
 log_interval: 50          # log interval in iterations
-keep_nbest_models: 60   # number of models to keep
+keep_nbest_models: 60     # number of models to keep
 num_att_plot: 0           # number of attention figures to be saved in every check
 seed: 0                   # random seed number
 patience: null            # patience for early stopping
@@ -97,5 +96,5 @@ best_model_criterion:     # criterion to save the best models
     - min
 cudnn_deterministic: false # setting to false accelerates the training speed but makes it non-deterministic
                            # in the case of GAN-TTS training, we strongly recommend setting to false
-cudnn_benchmark: false     # setting to true might acdelerate the training speed but sometimes decrease it
+cudnn_benchmark: false     # setting to true might accelerate the training speed but sometimes decrease it
                            # therefore, we set to false as a default (recommend trying both cases)

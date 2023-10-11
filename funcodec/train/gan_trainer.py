@@ -1,5 +1,6 @@
 # Copyright 2021 Tomoki Hayashi
-#  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
+# Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
+# Adapted by Zhihao Du for GAN-based Codec models.
 
 """Trainer module for GAN-based training."""
 

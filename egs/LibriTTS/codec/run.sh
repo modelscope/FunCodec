@@ -8,7 +8,7 @@ gpu_num=2
 count=1
 
 # general configuration
-feats_dir="." #feature output dictionary
+feats_dir="."
 exp_dir="."
 dumpdir=dump/LibriTTS
 stage=0

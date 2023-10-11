@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright FunASR (https://github.com/alibaba-damo-academy/FunASR). All Rights Reserved.
+# Copyright FunCodec (https://github.com/alibaba-damo-academy/FunCodec). All Rights Reserved.
 #  MIT License  (https://opensource.org/licenses/MIT)
 
 import argparse
@@ -40,7 +40,7 @@ from funcodec.utils.hinter import hint_once
 
 
 class Speech2Token(nn.Module):
-    """Speech2Xvector class
+    """Speech2Token class
 
     Examples:
         >>> import soundfile
@@ -139,29 +139,15 @@ class Speech2Token(nn.Module):
             model_tag: Optional[str] = None,
             **kwargs: Optional[Any],
     ):
-        """Build Speech2Xvector instance from the pretrained model.
+        """Build Speech2Token instance from the pretrained model.
 
         Args:
-            model_tag (Optional[str]): Model tag of the pretrained models.
-                Currently, the tags of espnet_model_zoo are supported.
+            model_tag (Optional[str]): Model tag of the pretrained models. Currently, not used.
 
         Returns:
-            Speech2Xvector: Speech2Xvector instance.
+            Speech2Token: Speech2Token instance.
 
         """
-        if model_tag is not None:
-            try:
-                from espnet_model_zoo.downloader import ModelDownloader
-
-            except ImportError:
-                logging.error(
-                    "`espnet_model_zoo` is not installed. "
-                    "Please install via `pip install -U espnet_model_zoo`."
-                )
-                raise
-            d = ModelDownloader()
-            kwargs.update(**d.download_and_unpack(model_tag))
-
         return Speech2Token(**kwargs)
 
 

@@ -17,9 +17,9 @@ from typing import Optional
 from typing import Sequence
 from typing import Tuple
 from typing import Union
+from typing import Any
 
 import humanfriendly
-import oss2
 from io import BytesIO
 import os
 import numpy as np
@@ -94,12 +94,12 @@ class TrainerOptions:
     unused_parameters: bool
     wandb_model_log_interval: int
     use_pai: bool
-    oss_bucket: Union[oss2.Bucket, None]
+    oss_bucket: Any
     save_ckpt_every_steps: int
 
 
 class Trainer:
-    """Trainer having a optimizer.
+    """Trainer having an optimizer.
 
     If you'd like to use multiple optimizers, then inherit this class
     and override the methods if necessary - at least "train_one_epoch()"

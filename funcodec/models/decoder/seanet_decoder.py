@@ -1,3 +1,6 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# Adapted by Zhihao Du for 2D SEANet
+
 import typing as tp
 import numpy as np
 import torch.nn as nn
