@@ -42,7 +42,7 @@ Please refer `egs/LibriTTS/codec/encoding_decoding.sh` to download pretrained mo
 cd egs/LibriTTS/codec
 model_name=audio_codec-encodec-zh_en-general-16k-nq32ds640-pytorch
 bash encoding_decoding.sh --stage 0 --model_name ${model_name} --model_hub modelscope
-# The pre-trained model will be downloaded to exp/audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch
+# The pre-trained model will be downloaded to exp/audio_codec-encodec-zh_en-general-16k-nq32ds640-pytorch
 ```
 
 ### Download models from Huggingface
@@ -51,7 +51,7 @@ Please refer `egs/LibriTTS/codec/encoding_decoding.sh` to download pretrained mo
 cd egs/LibriTTS/codec
 model_name=audio_codec-encodec-zh_en-general-16k-nq32ds640-pytorch
 bash encoding_decoding.sh --stage 0 --model_name ${model_name} --model_hub huggingface
-# The pre-trained model will be downloaded to exp/audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch
+# The pre-trained model will be downloaded to exp/audio_codec-encodec-zh_en-general-16k-nq32ds640-pytorch
 ```
 
 ## Inference
