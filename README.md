@@ -40,13 +40,19 @@ pip install --editable ./
 Please refer `egs/LibriTTS/codec/encoding_decoding.sh` to download pretrained models:
 ```shell
 cd egs/LibriTTS/codec
-model_name=audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch
-bash encoding_decoding.sh --stage 0 --model_name ${model_name}
+model_name=audio_codec-encodec-zh_en-general-16k-nq32ds640-pytorch
+bash encoding_decoding.sh --stage 0 --model_name ${model_name} --model_hub modelscope
 # The pre-trained model will be downloaded to exp/audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch
 ```
-<!---
+
 ### Download models from Huggingface
---->
+Please refer `egs/LibriTTS/codec/encoding_decoding.sh` to download pretrained models:
+```shell
+cd egs/LibriTTS/codec
+model_name=audio_codec-encodec-zh_en-general-16k-nq32ds640-pytorch
+bash encoding_decoding.sh --stage 0 --model_name ${model_name} --model_hub huggingface
+# The pre-trained model will be downloaded to exp/audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch
+```
 
 ## Inference
 ### Batch inference
@@ -56,7 +62,7 @@ and the codes will be saved to `output_dir/codecs.txt` in a format of jsonl.
 ```shell
 cd egs/LibriTTS/codec
 bash encoding_decoding.sh --stage 1 --batch_size 16 --num_workers 4 --gpu_devices "0,1" \
-  --model_dir exp/${model_name} --bit_width 4000 \
+  --model_dir exp/${model_name} --bit_width 16000 \
   --wav_scp input_wav.scp  --out_dir outputs/codecs/
 # input_wav.scp has the following format：
 # uttid1 path/to/file1.wav
@@ -68,7 +74,7 @@ Decode codes with an input file `codecs.txt`,
 and the reconstructed waveform will be saved to `output_dir/logdir/output.*/*.wav`.
 ```shell
 bash encoding_decoding.sh --stage 2 --batch_size 16 --num_workers 4 --gpu_devices "0,1" \
-  --model_dir exp/${model_name} --bit_width 8000 --file_sampling_rate 16000 \
+  --model_dir exp/${model_name} --bit_width 16000 --file_sampling_rate 16000 \
   --wav_scp codecs.txt --out_dir outputs/recon_wavs 
 # codecs.scp is the output of above encoding stage, which has the following format：
 # uttid1 [[[1, 2, 3, ...],[2, 3, 4, ...], ...]]

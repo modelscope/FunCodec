@@ -20,6 +20,7 @@ batch_size=16
 num_workers=4
 data_format=
 model_name=
+model_hub=modelscope
 
 . utils/parse_options.sh || exit 1;
 
@@ -38,9 +39,18 @@ fi
 mkdir -p exp
 # Downloading Stage
 if [ ${stage} -eq 0 ]; then
-  echo "stage 0: downloading model"
   git lfs install
-  git clone https://www.modelscope.cn/damo/${model_name}.git
+
+  if [ "${model_hub}" = "modelscope" ]; then
+    echo "stage 0: downloading model from modelscope"
+    git clone https://www.modelscope.cn/damo/${model_name}.git
+  fi
+
+  if [ "${model_hub}" = "huggingface" ]; then
+    echo "stage 0: downloading model from huggingface"
+    git clone https://huggingface.co/alibaba-damo/${model_name}
+  fi
+
   mv ${model_name} exp/${model_name}
 fi
 
