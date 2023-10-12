@@ -10,30 +10,16 @@ pip install --editable ./
 ```
 
 ## Available models
-- Models on ModelScope
+🤗 links to the Huggingface model hub, while ⭐ refers the Modelscope.
 
-| Model name                                                                                                                                                                               |   Corpus    |  Bitrate  | Parameters | Flops  |
-|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-----------:|:---------:|:----------:|:------:|
-| [audio_codec-encodec-zh_en-general-16k-nq32ds640-pytorch](https://www.modelscope.cn/models/damo/audio_codec-encodec-zh_en-general-16k-nq32ds640-pytorch/summary)                         |   General   | 250~8000  |  57.83 M   | 7.73G  |
-| [audio_codec-encodec-zh_en-general-16k-nq32ds320-pytorch](https://www.modelscope.cn/models/damo/audio_codec-encodec-zh_en-general-16k-nq32ds320-pytorch/summary)                         |   General   | 500~16000 |  14.85 M   | 3.72 G |
-| [audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch](https://www.modelscope.cn/models/damo/audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch/summary)                             |  LibriTTS   | 250~8000  |  57.83 M   | 7.73G  |
-| [audio_codec-encodec-en-libritts-16k-nq32ds320-pytorch](https://www.modelscope.cn/models/damo/audio_codec-encodec-en-libritts-16k-nq32ds320-pytorch/summary)                             |  LibriTTS   | 500~16000 |  14.85 M   | 3.72 G |
-| [audio_codec-freqcodec_magphase-en-libritts-16k-gr8nq32ds320-pytorch](https://www.modelscope.cn/models/damo/audio_codec-freqcodec_magphase-en-libritts-16k-gr8nq32ds320-pytorch/summary) |  LibriTTS   | 500~16000 |   4.50 M   | 2.18 G | 
-| [audio_codec-freqcodec_magphase-en-libritts-16k-gr1nq32ds320-pytorch](https://www.modelscope.cn/models/damo/audio_codec-freqcodec_magphase-en-libritts-16k-gr1nq32ds320-pytorch/summary) |  LibriTTS   | 500~16000 |   0.52 M   | 0.34 G |
-
-
-- Models on Huggingface 
-
-| Model name                                                                                                                                                                               |   Corpus    |  Bitrate  | Parameters | Flops  |
-|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-----------:|:---------:|:----------:|:------:|
-| [audio_codec-encodec-zh_en-general-16k-nq32ds640-pytorch](https://huggingface.co/alibaba-damo/audio_codec-encodec-zh_en-general-16k-nq32ds640-pytorch)                         |   General   | 250~8000  |  57.83 M   | 7.73G  |
-| [audio_codec-encodec-zh_en-general-16k-nq32ds320-pytorch](https://huggingface.co/alibaba-damo/audio_codec-encodec-zh_en-general-16k-nq32ds320-pytorch)                         |   General   | 500~16000 |  14.85 M   | 3.72 G |
-| [audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch](https://huggingface.co/alibaba-damo/audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch)                             |  LibriTTS   | 250~8000  |  57.83 M   | 7.73G  |
-| [audio_codec-encodec-en-libritts-16k-nq32ds320-pytorch](https://huggingface.co/alibaba-damo/audio_codec-encodec-en-libritts-16k-nq32ds320-pytorch)                             |  LibriTTS   | 500~16000 |  14.85 M   | 3.72 G |
-| [audio_codec-freqcodec_magphase-en-libritts-16k-gr8nq32ds320-pytorch](https://huggingface.co/alibaba-damo/audio_codec-freqcodec_magphase-en-libritts-16k-gr8nq32ds320-pytorch) |  LibriTTS   | 500~16000 |   4.50 M   | 2.18 G | 
-| [audio_codec-freqcodec_magphase-en-libritts-16k-gr1nq32ds320-pytorch](https://huggingface.co/alibaba-damo/audio_codec-freqcodec_magphase-en-libritts-16k-gr1nq32ds320-pytorch) |  LibriTTS   | 500~16000 |   0.52 M   | 0.34 G |
-
-
+| Model name                                                          |                                                                                                              Model hub                                                                                                               |  Corpus  |  Bitrate  | Parameters | Flops  |
+|:--------------------------------------------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------:|:---------:|:----------:|:------:|
+| audio_codec-encodec-zh_en-general-16k-nq32ds640-pytorch             |             [🤗](https://huggingface.co/alibaba-damo/audio_codec-encodec-zh_en-general-16k-nq32ds640-pytorch) [⭐](https://www.modelscope.cn/models/damo/audio_codec-encodec-zh_en-general-16k-nq32ds640-pytorch/summary)             | General  | 250~8000  |  57.83 M   | 7.73G  |
+| audio_codec-encodec-zh_en-general-16k-nq32ds320-pytorch             |             [🤗](https://huggingface.co/alibaba-damo/audio_codec-encodec-zh_en-general-16k-nq32ds320-pytorch) [⭐](https://www.modelscope.cn/models/damo/audio_codec-encodec-zh_en-general-16k-nq32ds320-pytorch/summary)             | General  | 500~16000 |  14.85 M   | 3.72 G |
+| audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch               |               [🤗](https://huggingface.co/alibaba-damo/audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch) [⭐](https://www.modelscope.cn/models/damo/audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch/summary)               | LibriTTS | 250~8000  |  57.83 M   | 7.73G  |
+| audio_codec-encodec-en-libritts-16k-nq32ds320-pytorch               |               [🤗](https://huggingface.co/alibaba-damo/audio_codec-encodec-en-libritts-16k-nq32ds320-pytorch) [⭐](https://www.modelscope.cn/models/damo/audio_codec-encodec-en-libritts-16k-nq32ds320-pytorch/summary)               | LibriTTS | 500~16000 |  14.85 M   | 3.72 G |
+| audio_codec-freqcodec_magphase-en-libritts-16k-gr8nq32ds320-pytorch | [🤗](https://huggingface.co/alibaba-damo/audio_codec-freqcodec_magphase-en-libritts-16k-gr8nq32ds320-pytorch) [⭐](https://www.modelscope.cn/models/damo/audio_codec-freqcodec_magphase-en-libritts-16k-gr8nq32ds320-pytorch/summary) | LibriTTS | 500~16000 |   4.50 M   | 2.18 G | 
+| audio_codec-freqcodec_magphase-en-libritts-16k-gr1nq32ds320-pytorch | [🤗](https://huggingface.co/alibaba-damo/audio_codec-freqcodec_magphase-en-libritts-16k-gr1nq32ds320-pytorch) [⭐](https://www.modelscope.cn/models/damo/audio_codec-freqcodec_magphase-en-libritts-16k-gr1nq32ds320-pytorch/summary) | LibriTTS | 500~16000 |   0.52 M   | 0.34 G |
 
 ## Model Download
 ### Download models from ModelScope
