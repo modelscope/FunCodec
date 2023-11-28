@@ -102,6 +102,11 @@ class EncoderLayer(nn.Module):
             torch.Tensor: Mask tensor (#batch, time).
 
         """
+        if isinstance(x, tuple):
+            x, pos_emb = x[0], x[1]
+        else:
+            x, pos_emb = x, None
+
         skip_layer = False
         # with stochastic depth, residual connection `x + f(x)` becomes
         # `x <- x + 1 / (1 - p) * f(x)` at training time.
@@ -113,6 +118,8 @@ class EncoderLayer(nn.Module):
         if skip_layer:
             if cache is not None:
                 x = torch.cat([cache, x], dim=1)
+            if pos_emb is not None:
+                return (x, pos_emb), mask
             return x, mask
 
         residual = x
@@ -127,13 +134,16 @@ class EncoderLayer(nn.Module):
             residual = residual[:, -1:, :]
             mask = None if mask is None else mask[:, -1:, :]
 
+        if pos_emb is not None:
+            x_att = self.self_attn(x_q, x, x, pos_emb, mask)
+        else:
+            x_att = self.self_attn(x_q, x, x, mask)
+
         if self.concat_after:
-            x_concat = torch.cat((x, self.self_attn(x_q, x, x, mask)), dim=-1)
+            x_concat = torch.cat((x, x_att), dim=-1)
             x = residual + stoch_layer_coeff * self.concat_linear(x_concat)
         else:
-            x = residual + stoch_layer_coeff * self.dropout(
-                self.self_attn(x_q, x, x, mask)
-            )
+            x = residual + stoch_layer_coeff * self.dropout(x_att)
         if not self.normalize_before:
             x = self.norm1(x)
 
@@ -146,6 +156,9 @@ class EncoderLayer(nn.Module):
 
         if cache is not None:
             x = torch.cat([cache, x], dim=1)
+
+        if pos_emb is not None:
+            return (x, pos_emb), mask
 
         return x, mask
 
