@@ -153,7 +153,7 @@ class Text2Audio(nn.Module):
         continual_mode = self.continual > 0 and prompt_text is not None and prompt_audio is not None
         if continual_mode:
             text = " ".join([prompt_text, text])
-            codec = self.codec_model(prompt_audio, run_mod="encode")
+            codec = self.codec_model(prompt_audio, run_mod="encode")[0][0].squeeze(1).transpose(0,1)
             continual = codec[:self.continual, :self.model.predict_nq].tolist()
         else:
             continual = None
@@ -181,7 +181,10 @@ class Text2Audio(nn.Module):
         )
 
         # 3. predict embeddings
-        gen_speech = self.model.syn_audio(decoded_codec, text_outs, text_out_lens, self.codec_model)
+        gen_speech = self.model.syn_audio(
+            decoded_codec, text_outs, text_out_lens, self.codec_model,
+            continual_length=len(continual),
+        )
 
         ret_val = dict(
             gen=gen_speech,
@@ -302,7 +305,7 @@ def inference_func(
                     sr=my_model.codec_model.model.quantizer.sampling_rate,
                     mono=True,
                     dtype=np.float32
-                )[0]
+                )[0][np.newaxis, :]
             loader = [("utt1", data_dict)]
         else:
             loader = Text2AudioGenTask.build_streaming_iterator(

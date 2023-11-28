@@ -553,6 +553,7 @@ class LauraGenModel(AbsESPnetModel):
             text: torch.Tensor,
             text_lengths: torch.Tensor,
             codec_model,
+            continual_length=None,
     ):
         codec = codec[:, :, :self.predict_nq]
         prob = F.one_hot(
@@ -561,7 +562,7 @@ class LauraGenModel(AbsESPnetModel):
         ).float()
         codec_lengths = torch.tensor([codec.shape[1]], dtype=torch.int64, device=text.device)
         codec_emb, codec_emb_lens = self.cal_codec_emb(text, text_lengths, prob, codec_lengths)
-        _, _, recon_wav, _ = codec_model(codec_emb, run_mod="decode_emb")
+        _, _, recon_wav, _ = codec_model(codec_emb[:, continual_length:], run_mod="decode_emb")
 
         return recon_wav
 
