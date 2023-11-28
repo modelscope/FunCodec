@@ -175,9 +175,9 @@ class Text2Audio(nn.Module):
         )
 
         _, _, gen_speech_only_lm, _ = self.codec_model(
-            decoded_codec.unsqueeze(-1) if decoded_codec.dim() == 2 else decoded_codec,
+            decoded_codec[:, len(continual):],
             bit_width=None,
-            run_mod="decode_emb" if decoded_codec.shape[-1] == self.model.codebook_dim else "decode"
+            run_mod="decode"
         )
 
         # 3. predict embeddings
