@@ -375,7 +375,7 @@ def inference(
         **kwargs,
     )
 
-    return inference_pipeline(data_path_and_name_and_type)
+    return inference_pipeline(data_path_and_name_and_type, raw_inputs=kwargs.get("raw_inputs", None))
 
 
 def get_parser():
