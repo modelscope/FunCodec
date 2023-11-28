@@ -272,7 +272,7 @@ def inference_func(
         device=device,
         dtype=dtype,
         streaming=streaming,
-        kwargs=kwargs,
+        **kwargs
     )
     logging.info("model_kwargs: {}".format(model_kwargs))
     my_model = Text2Audio.from_pretrained(
