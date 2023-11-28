@@ -942,3 +942,92 @@ class CodeMixTokenizerCommonPreprocessor(CommonPreprocessor):
         del data[self.split_text_name]
         return result
 
+
+class Text2AudioPreprocessor(AbsPreprocessor):
+    def __init__(
+            self,
+            train: bool,
+            audio_max_duration: int = 30,
+            codec_token_rate: int = 25,
+            text_name: str = "text",
+            codec_name: str = "codec",
+            token_list: str = None,
+            token_type: str = None,
+            bpemodel: str = None,
+            non_linguistic_symbols=None,
+            text_cleaner=None,
+            g2p_type=None,
+            unk_symbol: str = "<unk>",
+            space_symbol: str = "<space>",
+            delimiter: str = None,
+    ):
+        super().__init__(train)
+        self.train = train
+        self.audio_max_duration = audio_max_duration
+        self.codec_token_rate = codec_token_rate
+        self.codec_name = codec_name
+        self.text_name = text_name
+        self.token_list = []
+        if token_list is not None:
+            if isinstance(token_list, list):
+                self.token_list = token_list
+            elif os.path.exists(token_list):
+                for line in open(token_list, "rt"):
+                    token = line.strip()
+                    self.token_list.append(token)
+            # assert "<unk>" in self.token_list, f"<unk> must in token list {token_list}"
+
+        if token_type is not None and token_list is not None:
+
+            from funasr.text.build_tokenizer import build_tokenizer
+            from funasr.text.cleaner import TextCleaner
+            from funasr.text.token_id_converter import TokenIDConverter
+            self.text_cleaner = TextCleaner(text_cleaner)
+
+            self.tokenizer = build_tokenizer(
+                token_type=token_type,
+                bpemodel=bpemodel,
+                delimiter=delimiter,
+                space_symbol=space_symbol,
+                non_linguistic_symbols=non_linguistic_symbols,
+                g2p_type=g2p_type,
+            )
+            self.token_id_converter = TokenIDConverter(
+                token_list=token_list,
+                unk_symbol=unk_symbol,
+            )
+        else:
+            self.text_cleaner = None
+            self.tokenizer = None
+            self.token_id_converter = None
+
+    def _speech_process(
+            self, data: Dict[str, Union[str, np.ndarray]]
+    ) -> Dict[str, Union[str, np.ndarray]]:
+        if self.codec_name in data:
+            codec = data[self.codec_name].astype(int)
+            codec_max_len = int(self.audio_max_duration * self.codec_token_rate)
+            if codec.shape[0] > codec_max_len:
+                rand_st = random.randint(0, codec.shape[0] - codec_max_len)
+                data[self.codec_name] = codec[rand_st: rand_st+codec_max_len]
+        return data
+
+    def _text_process(
+            self, data: Dict[str, Union[str, np.ndarray]]
+    ) -> Dict[str, np.ndarray]:
+        if self.text_name in data:
+            text = data[self.text_name]
+            if self.text_cleaner is not None:
+                text = self.text_cleaner(text)
+            if self.tokenizer is not None:
+                tokens = self.tokenizer.text2tokens(text)
+                text_ints = self.token_id_converter.tokens2ids(tokens)
+                data[self.text_name] = np.array(text_ints, dtype=np.int64)
+        return data
+
+    def __call__(
+            self, uid: str, data: Dict[str, Union[str, np.ndarray]]
+    ) -> Dict[str, np.ndarray]:
+        data = self._speech_process(data)
+        data = self._text_process(data)
+        return data

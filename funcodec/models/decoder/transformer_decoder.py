@@ -19,8 +19,7 @@ from funcodec.modules.embedding import PositionalEncoding
 from funcodec.modules.layer_norm import LayerNorm
 from funcodec.modules.lightconv import LightweightConvolution
 from funcodec.modules.lightconv2d import LightweightConvolution2D
-from funcodec.modules.mask import subsequent_mask
-from funcodec.modules.nets_utils import make_pad_mask
+from funcodec.modules.nets_utils import make_pad_mask, subsequent_mask
 from funcodec.modules.positionwise_feed_forward import (
     PositionwiseFeedForward,  # noqa: H301
 )

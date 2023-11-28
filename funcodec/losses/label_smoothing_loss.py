@@ -28,6 +28,7 @@ class LabelSmoothingLoss(nn.Module):
         smoothing,
         normalize_length=False,
         criterion=nn.KLDivLoss(reduction="none"),
+        reduction=True,
     ):
         """Construct an LabelSmoothingLoss object."""
         super(LabelSmoothingLoss, self).__init__()
@@ -38,6 +39,7 @@ class LabelSmoothingLoss(nn.Module):
         self.size = size
         self.true_dist = None
         self.normalize_length = normalize_length
+        self.reduction = reduction
 
     def forward(self, x, target):
         """Compute loss between x and target.
@@ -50,8 +52,8 @@ class LabelSmoothingLoss(nn.Module):
         """
         assert x.size(2) == self.size
         batch_size = x.size(0)
-        x = x.view(-1, self.size)
-        target = target.view(-1)
+        x = x.reshape(-1, self.size)
+        target = target.reshape(-1)
         with torch.no_grad():
             true_dist = x.clone()
             true_dist.fill_(self.smoothing / (self.size - 1))
@@ -60,8 +62,11 @@ class LabelSmoothingLoss(nn.Module):
             target = target.masked_fill(ignore, 0)  # avoid -1 index
             true_dist.scatter_(1, target.unsqueeze(1), self.confidence)
         kl = self.criterion(torch.log_softmax(x, dim=1), true_dist)
-        denom = total if self.normalize_length else batch_size
-        return kl.masked_fill(ignore.unsqueeze(1), 0).sum() / denom
+        if not self.reduction:
+            return kl
+        else:
+            denom = total if self.normalize_length else batch_size
+            return kl.masked_fill(ignore.unsqueeze(1), 0).sum() / denom
 
 
 class SequenceBinaryCrossEntropy(nn.Module):

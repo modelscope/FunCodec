@@ -85,6 +85,15 @@ def str_or_int(value: str) -> Union[str, int]:
         return value
 
 
+def int_or_float_or_bool(value: str) -> Union[int, float, bool]:
+    if value.strip().lower() in ["true", "false"]:
+        return value.strip().lower() == "true"
+    elif "." in value:
+        return float(value)
+    else:
+        return int(value)
+
+
 def str_or_none(value: str) -> Optional[str]:
     """str_or_none.
 
