@@ -155,8 +155,10 @@ class Text2Audio(nn.Module):
             text = " ".join([prompt_text, text])
             codec = self.codec_model(prompt_audio, run_mod="encode")[0][0].squeeze(1).transpose(0,1)
             continual = codec[:self.continual, :self.model.predict_nq].tolist()
+            continual_length = len(continual)
         else:
             continual = None
+            continual_length = None
 
         # 0. extract text embeddings
         text_emb, text_emb_lens = self.text_emb_model(text)
@@ -175,7 +177,7 @@ class Text2Audio(nn.Module):
         )
 
         _, _, gen_speech_only_lm, _ = self.codec_model(
-            decoded_codec[:, len(continual):],
+            decoded_codec[:, continual_length:],
             bit_width=None,
             run_mod="decode"
         )
@@ -183,7 +185,7 @@ class Text2Audio(nn.Module):
         # 3. predict embeddings
         gen_speech = self.model.syn_audio(
             decoded_codec, text_outs, text_out_lens, self.codec_model,
-            continual_length=len(continual),
+            continual_length=continual_length,
         )
 
         ret_val = dict(
