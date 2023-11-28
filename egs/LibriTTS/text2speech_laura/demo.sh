@@ -57,8 +57,8 @@ if [ ${stage} -eq 1 ]; then
     --sampling 25 \
     --log_level warning \
     --tokenize_to_phone true \
-    --raw_inputs ${text} \
-    --output_dir ${output_dir}
+    --raw_inputs "${text}" \
+    --output_dir "${output_dir}"
 
   echo "Generated speeches are saved in ${output_dir}"
 fi
@@ -74,10 +74,10 @@ if [ ${stage} -eq 2 ]; then
     --continual 250 \
     --log_level warning \
     --tokenize_to_phone true \
-    --raw_inputs ${text} \
-    --raw_inputs ${prompt_text} \
-    --raw_inputs ${prompt_audio} \
-    --output_dir ${output_dir}
+    --raw_inputs "${text}" \
+    --raw_inputs "${prompt_text}" \
+    --raw_inputs "${prompt_audio}" \
+    --output_dir "${output_dir}"
 
   echo "Generated speeches are saved in ${output_dir}"
 fi
