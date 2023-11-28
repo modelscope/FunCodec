@@ -45,7 +45,7 @@ class Text2Audio(nn.Module):
             model_file: Union[Path, str] = None,
             device: str = "cpu",
             dtype: str = "float32",
-            kwargs: dict = None,
+            **kwargs
     ):
         super().__init__()
 
