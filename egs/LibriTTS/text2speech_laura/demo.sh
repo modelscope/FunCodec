@@ -8,8 +8,8 @@ codec_model="audio_codec-encodec-zh_en-general-16k-nq32ds640-pytorch"
 model_hub=modelscope
 gpuid_list=0
 text="nothing was to be done but to put about, and return in disappointment towards the north."
-prompt_text="one of these is context"
-prompt_audio="demo/8230_279154_000013_000003.wav"
+prompt_text="one of these is context"                # "nothing was to be done"
+prompt_audio="demo/8230_279154_000013_000003.wav"    # conf/8230_279154_000013_000003.wav
 output_dir=
 
 . utils/parse_options.sh || exit 1;
