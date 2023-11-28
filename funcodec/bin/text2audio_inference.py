@@ -302,7 +302,7 @@ def inference_func(
                     sr=my_model.codec_model.model.quantizer.sampling_rate,
                     mono=True,
                     dtype=np.float32
-                )
+                )[0]
             loader = [("utt1", data_dict)]
         else:
             loader = Text2AudioGenTask.build_streaming_iterator(
