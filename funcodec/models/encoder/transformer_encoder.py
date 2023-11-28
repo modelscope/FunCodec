@@ -11,12 +11,21 @@ import torch
 from torch import nn
 import logging
 from funcodec.models.encoder.abs_encoder import AbsEncoder
-from funcodec.modules.attention import MultiHeadedAttention
-from funcodec.modules.embedding import PositionalEncoding
+from funcodec.modules.attention import (
+    MultiHeadedAttention,
+    RelPositionMultiHeadedAttention,  # noqa: H301
+    LegacyRelPositionMultiHeadedAttention,  # noqa: H301
+)
 from funcodec.modules.layer_norm import LayerNorm
 from funcodec.modules.multi_layer_conv import Conv1dLinear
 from funcodec.modules.multi_layer_conv import MultiLayeredConv1d
 from funcodec.modules.nets_utils import make_pad_mask
+from funcodec.modules.embedding import (
+    PositionalEncoding,  # noqa: H301
+    ScaledPositionalEncoding,  # noqa: H301
+    RelPositionalEncoding,  # noqa: H301
+    LegacyRelPositionalEncoding,  # noqa: H301
+)
 from funcodec.modules.positionwise_feed_forward import (
     PositionwiseFeedForward,  # noqa: H301
 )
@@ -424,6 +433,7 @@ class TransformerEncoder_s0(torch.nn.Module):
         intermediate_layers=None,
         ctc_softmax=None,
         conditioning_layer_dim=None,
+        zero_triu: bool = False,
     ):
         """Construct an Encoder object."""
         super(TransformerEncoder_s0, self).__init__()
@@ -469,6 +479,8 @@ class TransformerEncoder_s0(torch.nn.Module):
             self.embed = torch.nn.Sequential(
                 pos_enc_class(attention_dim, positional_dropout_rate)
             )
+        elif input_layer == "none":
+            self.embed = torch.nn.Identity()
         else:
             raise ValueError("unknown input_layer: " + input_layer)
         self.normalize_before = normalize_before
@@ -479,20 +491,36 @@ class TransformerEncoder_s0(torch.nn.Module):
             dropout_rate,
             positionwise_conv_kernel_size,
         )
-        if selfattention_layer_type in [
-            "selfattn",
-            "rel_selfattn",
-            "legacy_rel_selfattn",
-        ]:
+        if selfattention_layer_type == "selfattn":
             logging.info("encoder self-attention layer type = self-attention")
             encoder_selfattn_layer = MultiHeadedAttention
-            encoder_selfattn_layer_args = [
-                (
-                    attention_heads,
-                    attention_dim,
-                    attention_dropout_rate,
-                )
-            ] * num_blocks
+            encoder_selfattn_layer_args = [(
+                attention_heads,
+                attention_dim,
+                attention_dropout_rate,
+            )] * num_blocks
+        elif selfattention_layer_type == "legacy_rel_selfattn":
+            logging.info("encoder self-attention layer type = legacy relative self-attention")
+            assert pos_enc_class == LegacyRelPositionalEncoding
+            encoder_selfattn_layer = LegacyRelPositionMultiHeadedAttention
+            encoder_selfattn_layer_args = [(
+                attention_heads,
+                attention_dim,
+                attention_dropout_rate,
+            )] * num_blocks
+            logging.warning(
+                "Using legacy_rel_selfattn and it will be deprecated in the future."
+            )
+        elif selfattention_layer_type == "rel_selfattn":
+            logging.info("encoder self-attention layer type = relative self-attention")
+            assert pos_enc_class == RelPositionalEncoding
+            encoder_selfattn_layer = RelPositionMultiHeadedAttention
+            encoder_selfattn_layer_args = [(
+                attention_heads,
+                attention_dim,
+                attention_dropout_rate,
+                zero_triu,
+            )] * num_blocks
         elif selfattention_layer_type == "lightconv":
             logging.info("encoder self-attention layer type = lightweight convolution")
             encoder_selfattn_layer = LightweightConvolution
@@ -643,7 +671,10 @@ class TransformerEncoder_s0(torch.nn.Module):
                     self.intermediate_layers is not None
                     and layer_idx + 1 in self.intermediate_layers
                 ):
-                    encoder_output = xs
+                    if isinstance(xs, tuple):
+                        encoder_output = xs[0]
+                    else:
+                        encoder_output = xs
                     # intermediate branches also require normalization.
                     if self.normalize_before:
                         encoder_output = self.after_norm(encoder_output)
@@ -653,6 +684,8 @@ class TransformerEncoder_s0(torch.nn.Module):
                         intermediate_result = self.ctc_softmax(encoder_output)
                         xs = xs + self.conditioning_layer(intermediate_result)
 
+        if isinstance(xs, tuple):
+            xs = xs[0]
         if self.normalize_before:
             xs = self.after_norm(xs)
 
@@ -674,7 +707,7 @@ class TransformerEncoder_s0(torch.nn.Module):
             List[torch.Tensor]: List of new cache tensors.
 
         """
-        if isinstance(self.embed, Conv2dSubsampling):
+        if isinstance(self.embed, (Conv2dSubsampling, Conv2dSubsampling6, Conv2dSubsampling8)):
             xs, masks = self.embed(xs, masks)
         else:
             xs = self.embed(xs)
@@ -684,6 +717,8 @@ class TransformerEncoder_s0(torch.nn.Module):
         for c, e in zip(cache, self.encoders):
             xs, masks = e(xs, masks, cache=c)
             new_cache.append(xs)
+        if isinstance(xs, tuple):
+            xs = xs[0]
         if self.normalize_before:
             xs = self.after_norm(xs)
         return xs, masks, new_cache

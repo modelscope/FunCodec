@@ -8,7 +8,8 @@ from typing import Dict
 from typing import Iterable
 from typing import List
 from typing import Union
-
+import random
+import os
 import numpy as np
 import scipy.signal
 import soundfile
@@ -979,9 +980,9 @@ class Text2AudioPreprocessor(AbsPreprocessor):
 
         if token_type is not None and token_list is not None:
 
-            from funasr.text.build_tokenizer import build_tokenizer
-            from funasr.text.cleaner import TextCleaner
-            from funasr.text.token_id_converter import TokenIDConverter
+            from funcodec.text.build_tokenizer import build_tokenizer
+            from funcodec.text.cleaner import TextCleaner
+            from funcodec.text.token_id_converter import TokenIDConverter
             self.text_cleaner = TextCleaner(text_cleaner)
 
             self.tokenizer = build_tokenizer(
