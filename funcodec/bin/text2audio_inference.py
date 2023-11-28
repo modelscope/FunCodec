@@ -283,26 +283,18 @@ def inference_func(
 
     def _forward(
             data_path_and_name_and_type: Sequence[Tuple[str, str, str]] = None,
+            raw_inputs: Union[Tuple[str], Tuple[str, str, str]] = None,
             output_dir_v2: Optional[str] = None,
             param_dict: Optional[dict] = None,
     ):
         logging.info("param_dict: {}".format(param_dict))
-        is_raw = False
-        for data_path, data_name, data_type in data_path_and_name_and_type:
-            if data_name == "text" and data_type == "raw_text":
-                is_raw = True
-        if is_raw:
-            data_dict = {}
-            for data_path, data_name, data_type in data_path_and_name_and_type:
-                if data_name in ["text", "prompt_text"]:
-                    data_dict[data_name] = data_path
-                elif data_name == "prompt_audio":
-                    data_dict["prompt_audio"] = librosa.load(
-                        data_path,
-                        sr=my_model.codec_model.model.quantizer.sampling_rate,
-                        mono=True,
-                        dtype=np.float
-                    )
+        if data_path_and_name_and_type is None and raw_inputs is not None:
+            data_dict = dict(
+                text=raw_inputs[0]
+            )
+            if len(raw_inputs) == 3:
+                data_dict["prompt_text"] = raw_inputs[1]
+                data_dict["prompt_audio"] = raw_inputs[2]
             loader = [("utt1", data_dict)]
         else:
             loader = Text2AudioGenTask.build_streaming_iterator(
@@ -435,6 +427,12 @@ def get_parser():
         required=False,
         action="append",
     )
+    group.add_argument(
+        "--raw_inputs",
+        type=str,
+        required=False,
+        action="append",
+    )
     group.add_argument("--key_file", type=str_or_none)
     group.add_argument("--allow_variable_data_keys", type=str2bool, default=False)
 
@@ -519,7 +517,7 @@ def main(cmd=None):
     args = parser.parse_args(cmd)
     kwargs = vars(args)
     kwargs.pop("config", None)
-    if args.output_dir is None:
+    if args.output_dir is None or "." not in args.output_dir:
         jobid, n_gpu = 1, 1
         gpuid = args.gpuid_list.split(",")[jobid-1]
     else:
