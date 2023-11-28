@@ -97,12 +97,12 @@ class Text2Audio(nn.Module):
             phoneme_list = self.phoneme_tokenizer(text)
         else:
             phoneme_list = text.strip().split(" ")
-        logging.debug(" ".join(phoneme_list))
+        logging.info(" ".join(phoneme_list))
         token_ids = []
         for one in phoneme_list:
             if one in self.model.token_list:
                 token_ids.append(self.model.token_list.index(one))
-        logging.debug(" ".join(token_ids))
+        logging.info(" ".join([str(x) for x in token_ids]))
         token_idx = torch.Tensor(token_ids).long().to(self.device)
         text_emb = self.model.token_embedding(token_idx)
 
