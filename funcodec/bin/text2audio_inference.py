@@ -297,7 +297,12 @@ def inference_func(
             )
             if len(raw_inputs) == 3:
                 data_dict["prompt_text"] = raw_inputs[1]
-                data_dict["prompt_audio"] = raw_inputs[2]
+                data_dict["prompt_audio"] = librosa.load(
+                    raw_inputs[2],
+                    sr=my_model.codec_model.model.quantizer.sampling_rate,
+                    mono=True,
+                    dtype=np.float32
+                )
             loader = [("utt1", data_dict)]
         else:
             loader = Text2AudioGenTask.build_streaming_iterator(
