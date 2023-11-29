@@ -121,6 +121,12 @@ class Text2AudioGenTask(AbsTask):
             default=None,
             help="The token type",
         )
+        group.add_argument(
+            "--g2p_type",
+            type=str_or_none,
+            default=None,
+            help="The g2p type",
+        )
 
         group = parser.add_argument_group(description="Preprocess related")
         group.add_argument(
@@ -149,17 +155,17 @@ class Text2AudioGenTask(AbsTask):
 
     @classmethod
     def build_collate_fn(
-            cls, args: argparse.Namespace, train: bool
+            cls, args: argparse.Namespace, train: bool, not_sequence=()
     ) -> Callable[
         [Collection[Tuple[str, Dict[str, np.ndarray]]]],
         Tuple[List[str], Dict[str, torch.Tensor]],
     ]:
         # NOTE(kamo): int value = 0 is reserved by CTC-blank symbol
-        return CommonCollateFn(float_pad_value=0.0, int_pad_value=-1)
+        return CommonCollateFn(float_pad_value=0.0, int_pad_value=-1, not_sequence=not_sequence)
 
     @classmethod
     def build_preprocess_fn(
-            cls, args: argparse.Namespace, train: bool
+            cls, args: argparse.Namespace, train: bool,
     ) -> Optional[Callable[[str, Dict[str, np.array]], Dict[str, np.ndarray]]]:
         if args.use_preprocessor:
             retval = Text2AudioPreprocessor(
@@ -168,6 +174,7 @@ class Text2AudioGenTask(AbsTask):
                 codec_token_rate=args.codec_token_rate,
                 token_list=args.token_list,
                 token_type=args.token_type,
+                g2p_type=args.g2p_type if hasattr(args, "g2p_type") else None,
             )
         else:
             retval = None

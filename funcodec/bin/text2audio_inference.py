@@ -298,17 +298,17 @@ def inference_func(
         logging.info("param_dict: {}".format(param_dict))
         if data_path_and_name_and_type is None and raw_inputs is not None:
             data_dict = dict(
-                text=raw_inputs[0]
+                text=[raw_inputs[0]]
             )
             if len(raw_inputs) == 3:
-                data_dict["prompt_text"] = raw_inputs[1]
-                data_dict["prompt_audio"] = librosa.load(
+                data_dict["prompt_text"] = [raw_inputs[1]]
+                data_dict["prompt_audio"] = [librosa.load(
                     raw_inputs[2],
                     sr=my_model.codec_model.model.quantizer.sampling_rate,
                     mono=True,
                     dtype=np.float32
-                )[0][np.newaxis, :]
-            loader = [("utt1", data_dict)]
+                )[0][np.newaxis, :]]
+            loader = [(["utt1"], data_dict)]
         else:
             loader = Text2AudioGenTask.build_streaming_iterator(
                 data_path_and_name_and_type,
@@ -327,12 +327,13 @@ def inference_func(
             os.makedirs(output_path, exist_ok=True)
         result_list = []
 
-        for key, data in loader:
+        for keys, data in loader:
+            key = keys[0]
             logging.info(f"generating {key}")
-            model_inputs = [data["text"]]
+            model_inputs = [data["text"][0]]
             for input_key in ["prompt_text", "prompt_audio"]:
                 if input_key in data:
-                    model_inputs.append(data[input_key])
+                    model_inputs.append(data[input_key][0])
 
             ret_val, _ = my_model(*model_inputs)
             item = {"key": key, "value": ret_val}
