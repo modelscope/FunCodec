@@ -11,6 +11,7 @@ text="genre: classical; instrument: piano, pianosolo; mood/theme: sadness"
 prompt_text=""
 prompt_audio="demo/03-1117703-0027.wav"
 output_dir=
+seed=0
 
 . utils/parse_options.sh || exit 1;
 
@@ -55,6 +56,7 @@ if [ ${stage} -eq 1 ]; then
     --codec_config_file exp/${codec_model}/config.yaml \
     --codec_model_file exp/${codec_model}/model.pth \
     --sampling 25 \
+    --seed ${seed} \
     --log_level warning \
     --raw_inputs "${text}" \
     --output_dir "${output_dir}"
@@ -70,6 +72,7 @@ if [ ${stage} -eq 2 ]; then
     --codec_config_file exp/${codec_model}/config.yaml \
     --codec_model_file exp/${codec_model}/model.pth \
     --sampling 25 \
+    --seed ${seed} \
     --continual 25 \
     --exclude_prompt false \
     --log_level warning \
