@@ -152,7 +152,7 @@ class Text2Audio(nn.Module):
         self.model.eval()
         continual_mode = self.continual > 0 and prompt_text is not None and prompt_audio is not None
         if continual_mode:
-            text = " ".join([prompt_text, text])
+            text = " ".join([prompt_text, text]).strip()
             codec = self.codec_model(prompt_audio, run_mod="encode")[0][0].squeeze(1).transpose(0,1)
             continual = codec[:self.continual, :self.model.predict_nq].tolist()
             continual_length = len(continual)
@@ -490,7 +490,7 @@ def get_parser():
     group.add_argument(
         "--text_emb_model",
         type=str,
-        default="./bloom-1b1/",
+        default="./exp/t5-base",
         help="The path to text embedding extraction model",
     )
     group.add_argument(
