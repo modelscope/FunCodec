@@ -72,13 +72,12 @@ def common_collate_fn(
 
     output = {}
     for key in data[0]:
-        if data[0][key].dtype.kind == "i":
-            pad_value = int_pad_value
-        else:
-            pad_value = float_pad_value
-
         array_list = [d[key] for d in data]
         if key not in raw_sequence:
+            if data[0][key].dtype.kind == "i":
+                pad_value = int_pad_value
+            else:
+                pad_value = float_pad_value
             tensor_list = [torch.from_numpy(a) for a in array_list]
             if pad_mode is None:
                 tensor = pad_list(tensor_list, pad_value)
