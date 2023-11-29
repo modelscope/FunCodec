@@ -155,13 +155,13 @@ class Text2AudioGenTask(AbsTask):
 
     @classmethod
     def build_collate_fn(
-            cls, args: argparse.Namespace, train: bool, not_sequence=()
+            cls, args: argparse.Namespace, train: bool, raw_sequence=()
     ) -> Callable[
         [Collection[Tuple[str, Dict[str, np.ndarray]]]],
         Tuple[List[str], Dict[str, torch.Tensor]],
     ]:
         # NOTE(kamo): int value = 0 is reserved by CTC-blank symbol
-        return CommonCollateFn(float_pad_value=0.0, int_pad_value=-1, not_sequence=not_sequence)
+        return CommonCollateFn(float_pad_value=0.0, int_pad_value=-1, raw_sequence=raw_sequence)
 
     @classmethod
     def build_preprocess_fn(

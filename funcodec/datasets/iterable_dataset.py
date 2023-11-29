@@ -189,203 +189,116 @@ class IterableESPnetDataset(IterableDataset):
 
     def __iter__(self) -> Iterator[Tuple[Union[str, int], Dict[str, np.ndarray]]]:
         count = 0
-        if len(self.path_name_type_list) != 0 and (self.path_name_type_list[0][2] == "bytes" or self.path_name_type_list[0][2] == "waveform"):
-            data = {}
-            value = self.path_name_type_list[0][0]
-            uid = 'utt_id'
-            name = self.path_name_type_list[0][1]
-            _type = self.path_name_type_list[0][2]
-            func = DATA_TYPES[_type]
-            array = func(value)
-            if self.fs is not None and name == "speech":
-                audio_fs = self.fs["audio_fs"]
-                model_fs = self.fs["model_fs"]
-                if audio_fs is not None and model_fs is not None:
-                    array = torch.from_numpy(array)
-                    array = array.unsqueeze(0)
-                    array = torchaudio.transforms.Resample(orig_freq=audio_fs,
-                                                   new_freq=model_fs)(array)
-                    array = array.squeeze(0).numpy()
-            data[name] = array
-
-            if self.preprocess is not None:
-                data = self.preprocess(uid, data)
-            for name in data:
-                count += 1
-                value = data[name]
-                if not isinstance(value, np.ndarray):
-                    raise RuntimeError(
-                        f'All values must be converted to np.ndarray object '
-                        f'by preprocessing, but "{name}" is still {type(value)}.')
-                # Cast to desired type
-                if value.dtype.kind == 'f':
-                    value = value.astype(self.float_dtype)
-                elif value.dtype.kind == 'i':
-                    value = value.astype(self.int_dtype)
-                else:
-                    raise NotImplementedError(
-                        f'Not supported dtype: {value.dtype}')
-                data[name] = value
-
-            yield uid, data
-
-        elif len(self.path_name_type_list) != 0 and self.path_name_type_list[0][2] == "sound" and not self.path_name_type_list[0][0].lower().endswith(".scp"):
-            data = {}
-            value = self.path_name_type_list[0][0]
-            uid = os.path.basename(self.path_name_type_list[0][0]).split(".")[0]
-            name = self.path_name_type_list[0][1]
-            _type = self.path_name_type_list[0][2]
-            if _type == "sound":
-                audio_type = os.path.basename(value).split(".")[1].lower()
-                if audio_type not in SUPPORT_AUDIO_TYPE_SETS:
-                    raise NotImplementedError(
-                        f'Not supported audio type: {audio_type}')
-                if audio_type == "pcm":
-                    _type = "pcm"
-
-            func = DATA_TYPES[_type]
-            array = func(value)
-            if self.fs is not None and name == "speech":
-                audio_fs = self.fs["audio_fs"]
-                model_fs = self.fs["model_fs"]
-                if audio_fs is not None and model_fs is not None:
-                    array = torch.from_numpy(array)
-                    array = array.unsqueeze(0)
-                    array = torchaudio.transforms.Resample(orig_freq=audio_fs,
-                                                           new_freq=model_fs)(array)
-                    array = array.squeeze(0).numpy()
-            data[name] = array
-
-            if self.preprocess is not None:
-                data = self.preprocess(uid, data)
-            for name in data:
-                count += 1
-                value = data[name]
-                if not isinstance(value, np.ndarray):
-                    raise RuntimeError(
-                        f'All values must be converted to np.ndarray object '
-                        f'by preprocessing, but "{name}" is still {type(value)}.')
-                # Cast to desired type
-                if value.dtype.kind == 'f':
-                    value = value.astype(self.float_dtype)
-                elif value.dtype.kind == 'i':
-                    value = value.astype(self.int_dtype)
-                else:
-                    raise NotImplementedError(
-                        f'Not supported dtype: {value.dtype}')
-                data[name] = value
-
-            yield uid, data
-
+        if self.key_file is not None:
+            uid_iter = (
+                line.rstrip().split(maxsplit=1)[0]
+                for line in open(self.key_file, encoding="utf-8")
+            )
+        elif len(self.path_name_type_list) != 0:
+            uid_iter = (
+                line.rstrip().split(maxsplit=1)[0]
+                for line in open(self.path_name_type_list[0][0], encoding="utf-8")
+            )
         else:
-            if self.key_file is not None:
-                uid_iter = (
-                    line.rstrip().split(maxsplit=1)[0]
-                    for line in open(self.key_file, encoding="utf-8")
-                )
-            elif len(self.path_name_type_list) != 0:
-                uid_iter = (
-                    line.rstrip().split(maxsplit=1)[0]
-                    for line in open(self.path_name_type_list[0][0], encoding="utf-8")
-                )
-            else:
-                uid_iter = iter(self.non_iterable_dataset)
+            uid_iter = iter(self.non_iterable_dataset)
 
-            files = [open(lis[0], encoding="utf-8") for lis in self.path_name_type_list]
+        files = [open(lis[0], encoding="utf-8") for lis in self.path_name_type_list]
 
-            worker_info = torch.utils.data.get_worker_info()
+        worker_info = torch.utils.data.get_worker_info()
 
-            linenum = 0
-            for count, uid in enumerate(uid_iter, 1):
-                # If num_workers>=1, split keys
-                if worker_info is not None:
-                    if (count - 1) % worker_info.num_workers != worker_info.id:
-                        continue
+        linenum = 0
+        for count, uid in enumerate(uid_iter, 1):
+            # If num_workers>=1, split keys
+            if worker_info is not None:
+                if (count - 1) % worker_info.num_workers != worker_info.id:
+                    continue
 
-                # 1. Read a line from each file
-                while True:
-                    keys = []
-                    values = []
-                    for f in files:
-                        linenum += 1
-                        try:
-                            line = next(f)
-                        except StopIteration:
-                            raise RuntimeError(f"{uid} is not found in the files")
-                        sps = line.rstrip().split(maxsplit=1)
-                        if len(sps) != 2:
-                            raise RuntimeError(
-                                f"This line doesn't include a space:"
-                                f" {f}:L{linenum}: {line})"
-                            )
-                        key, value = sps
-                        keys.append(key)
-                        values.append(value)
-
-                    for k_idx, k in enumerate(keys):
-                        if k != keys[0]:
-                            raise RuntimeError(
-                                f"Keys are mismatched. Text files (idx={k_idx}) is "
-                                f"not sorted or not having same keys at L{linenum}"
-                            )
-
-                    # If the key is matched, break the loop
-                    if len(keys) == 0 or keys[0] == uid:
-                        break
-
-                # 2. Load the entry from each line and create a dict
-                data = {}
-                # 2.a. Load data streamingly
-                for value, (path, name, _type) in zip(values, self.path_name_type_list):
-                    if _type == "sound":
-                        audio_type = os.path.basename(value).rsplit(".", 1)[1].lower()
-                        if audio_type not in SUPPORT_AUDIO_TYPE_SETS:
-                            raise NotImplementedError(
-                                f'Not supported audio type: {audio_type}')
-                        if audio_type == "pcm":
-                            _type = "pcm"
-                    func = DATA_TYPES[_type]
-                    # Load entry
-                    array = func(value)
-                    if self.fs is not None and name == "speech":
-                        audio_fs = self.fs["audio_fs"]
-                        model_fs = self.fs["model_fs"]
-                        if audio_fs is not None and model_fs is not None:
-                            array = torch.from_numpy(array)
-                            array = array.unsqueeze(0)
-                            array = torchaudio.transforms.Resample(orig_freq=audio_fs,
-                                                                   new_freq=model_fs)(array)
-                            array = array.squeeze(0).numpy()
-                    data[name] = array
-                if self.non_iterable_dataset is not None:
-                    # 2.b. Load data from non-iterable dataset
-                    _, from_non_iterable = self.non_iterable_dataset[uid]
-                    data.update(from_non_iterable)
-
-                # 3. [Option] Apply preprocessing
-                #   e.g. funcodec.train.preprocessor:CommonPreprocessor
-                if self.preprocess is not None:
-                    data = self.preprocess(uid, data)
-
-                # 4. Force data-precision
-                for name in data:
-                    value = data[name]
-                    if not isinstance(value, np.ndarray):
+            # 1. Read a line from each file
+            while True:
+                keys = []
+                values = []
+                for f in files:
+                    linenum += 1
+                    try:
+                        line = next(f)
+                    except StopIteration:
+                        raise RuntimeError(f"{uid} is not found in the files")
+                    sps = line.rstrip().split(maxsplit=1)
+                    if len(sps) != 2:
                         raise RuntimeError(
-                            f"All values must be converted to np.ndarray object "
-                            f'by preprocessing, but "{name}" is still {type(value)}.'
+                            f"This line doesn't include a space:"
+                            f" {f}:L{linenum}: {line})"
+                        )
+                    key, value = sps
+                    keys.append(key)
+                    values.append(value)
+
+                for k_idx, k in enumerate(keys):
+                    if k != keys[0]:
+                        raise RuntimeError(
+                            f"Keys are mismatched. Text files (idx={k_idx}) is "
+                            f"not sorted or not having same keys at L{linenum}"
                         )
 
-                    # Cast to desired type
-                    if value.dtype.kind == "f":
-                        value = value.astype(self.float_dtype)
-                    elif value.dtype.kind == "i":
-                        value = value.astype(self.int_dtype)
-                    else:
-                        raise NotImplementedError(f"Not supported dtype: {value.dtype}")
-                    data[name] = value
+                # If the key is matched, break the loop
+                if len(keys) == 0 or keys[0] == uid:
+                    break
 
-                yield uid, data
+            # 2. Load the entry from each line and create a dict
+            data = {}
+            # 2.a. Load data streamingly
+            for value, (path, name, _type) in zip(values, self.path_name_type_list):
+                if _type == "sound":
+                    audio_type = os.path.basename(value).rsplit(".", 1)[1].lower()
+                    if audio_type not in SUPPORT_AUDIO_TYPE_SETS:
+                        raise NotImplementedError(
+                            f'Not supported audio type: {audio_type}')
+                    if audio_type == "pcm":
+                        _type = "pcm"
+                func = DATA_TYPES[_type]
+                # Load entry
+                array = func(value)
+                if self.fs is not None and name == "speech":
+                    audio_fs = self.fs["audio_fs"]
+                    model_fs = self.fs["model_fs"]
+                    if audio_fs is not None and model_fs is not None:
+                        array = torch.from_numpy(array)
+                        array = array.unsqueeze(0)
+                        array = torchaudio.transforms.Resample(orig_freq=audio_fs,
+                                                               new_freq=model_fs)(array)
+                        array = array.squeeze(0).numpy()
+                data[name] = array
+            if self.non_iterable_dataset is not None:
+                # 2.b. Load data from non-iterable dataset
+                _, from_non_iterable = self.non_iterable_dataset[uid]
+                data.update(from_non_iterable)
+
+            # 3. [Option] Apply preprocessing
+            #   e.g. funcodec.train.preprocessor:CommonPreprocessor
+            if self.preprocess is not None:
+                data = self.preprocess(uid, data)
+
+            # 4. Force data-precision
+            for name in data:
+                value = data[name]
+                if not isinstance(value, (np.ndarray, str)):
+                    raise RuntimeError(
+                        f"All values must be converted to np.ndarray or str object "
+                        f'by preprocessing, but "{name}" is still {type(value)}.'
+                    )
+
+                # Cast to desired type
+                if isinstance(value, str):
+                    pass
+                elif value.dtype.kind == "f":
+                    value = value.astype(self.float_dtype)
+                elif value.dtype.kind == "i":
+                    value = value.astype(self.int_dtype)
+                else:
+                    raise NotImplementedError(f"Not supported dtype: {value.dtype}")
+                data[name] = value
+
+            yield uid, data
 
         if count == 0:
             raise RuntimeError("No iteration")

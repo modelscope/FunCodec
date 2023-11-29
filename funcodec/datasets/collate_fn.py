@@ -23,11 +23,13 @@ class CommonCollateFn:
             not_sequence: Collection[str] = (),
             max_sample_size=None,
             pad_mode=None,
+            raw_sequence: Collection[str] = (),
     ):
         assert check_argument_types()
         self.float_pad_value = float_pad_value
         self.int_pad_value = int_pad_value
         self.not_sequence = set(not_sequence)
+        self.raw_sequence = set(raw_sequence)
         self.max_sample_size = max_sample_size
         self.pad_mode = pad_mode
 
@@ -46,6 +48,7 @@ class CommonCollateFn:
             int_pad_value=self.int_pad_value,
             not_sequence=self.not_sequence,
             pad_mode=self.pad_mode,
+            raw_sequence=self.raw_sequence
         )
 
 
@@ -55,10 +58,10 @@ def common_collate_fn(
         int_pad_value: int = -32768,
         not_sequence: Collection[str] = (),
         pad_mode: Optional[str] = None,
+        raw_sequence: Collection[str] = (),
 ) -> Tuple[List[str], Dict[str, torch.Tensor]]:
     """Concatenate ndarray-list to an array and convert to torch.Tensor.
     """
-    assert check_argument_types()
     uttids = [u for u, _ in data]
     data = [d for _, d in data]
 
@@ -75,11 +78,14 @@ def common_collate_fn(
             pad_value = float_pad_value
 
         array_list = [d[key] for d in data]
-        tensor_list = [torch.from_numpy(a) for a in array_list]
-        if pad_mode is None:
-            tensor = pad_list(tensor_list, pad_value)
+        if key not in raw_sequence:
+            tensor_list = [torch.from_numpy(a) for a in array_list]
+            if pad_mode is None:
+                tensor = pad_list(tensor_list, pad_value)
+            else:
+                tensor = pad_list_with_mod(tensor_list, pad_value, pad_mode)
         else:
-            tensor = pad_list_with_mod(tensor_list, pad_value, pad_mode)
+            tensor = array_list
         output[key] = tensor
 
         if key not in not_sequence:
@@ -87,7 +93,6 @@ def common_collate_fn(
             output[key + "_lengths"] = lens
 
     output = (uttids, output)
-    assert check_return_type(output)
     return output
 
 

@@ -316,8 +316,9 @@ def inference_func(
                 batch_size=batch_size,
                 key_file=key_file,
                 num_workers=num_workers,
-                preprocess_fn=Text2AudioGenTask.build_preprocess_fn(my_model.model_args, False),
-                collate_fn=Text2AudioGenTask.build_collate_fn(my_model.model_args, False),
+                preprocess_fn=None,
+                collate_fn=Text2AudioGenTask.build_collate_fn(my_model.model_args, False,
+                                                              raw_sequence=("text", "prompt_text")),
                 allow_variable_data_keys=allow_variable_data_keys,
                 inference=True,
             )
