@@ -297,6 +297,7 @@ def inference_func(
     ):
         logging.info("param_dict: {}".format(param_dict))
         if data_path_and_name_and_type is None and raw_inputs is not None:
+            # add additional parenthesis to keep the same data format as streaming_iterator
             data_dict = dict(
                 text=[raw_inputs[0]]
             )

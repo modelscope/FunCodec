@@ -19,6 +19,7 @@ use_scale=false
 batch_size=16
 num_workers=4
 data_format=
+indices_save_type="text"
 model_name=
 model_hub=modelscope
 
@@ -93,6 +94,7 @@ if [ ${stage} -eq 1 ]; then
             --need_indices true \
             --need_sub_quants false \
             --use_scale false  \
+            --indices_save_type ${indices_save_type} \
             --run_mod "encode"
 
     cat ${_logdir}/output.*/codecs.txt > ${out_dir}/codecs.txt

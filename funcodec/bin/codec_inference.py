@@ -264,7 +264,11 @@ def inference_modelscope(
 
         indices_writer = None
         if "need_indices" in kwargs and kwargs["need_indices"]:
-            indices_writer = open(os.path.join(output_path, "codecs.txt"), "wt")
+            if "indices_save_type" in kwargs and kwargs["indices_save_type"] == "ark":
+                outfile_path = os.path.join(output_path, "indices")
+                indices_writer = kaldiio.WriteHelper("ark,scp,f:{}.ark,{}.scp".format(outfile_path, outfile_path))
+            else:
+                indices_writer = open(os.path.join(output_path, "codecs.txt"), "wt")
 
         sub_quants_writer = None
         if "need_sub_quants" in kwargs and kwargs["need_sub_quants"]:
@@ -274,10 +278,15 @@ def inference_modelscope(
         def write_indices(_key, _indices, batch_id=0, length=None):
             if indices_writer is None:
                 return
-            # n_frame x n_q x B x T, n_frame is always 1
-            to_write = [x[:, batch_id, :length].cpu().numpy().tolist() for x in _indices]
-            json_str = json.dumps(to_write)
-            indices_writer.write(_key + " " + json_str + "\n")
+            if "indices_save_type" in kwargs and kwargs["indices_save_type"] == "ark":
+                to_write = [x[:, batch_id, :length].cpu().float().numpy().T for x in _indices]
+                to_write = np.concatenate(to_write, axis=0)
+                indices_writer(_key, to_write)
+            else:
+                # n_frame x n_q x B x T, n_frame is always 1
+                to_write = [x[:, batch_id, :length].cpu().numpy().tolist() for x in _indices]
+                json_str = json.dumps(to_write)
+                indices_writer.write(_key + " " + json_str + "\n")
 
         def write_sub_quants(_key, _sub_quants, batch_id=0, length=None):
             if sub_quants_writer is None:
@@ -505,6 +514,12 @@ def get_parser():
     group.add_argument(
         "--need_indices",
         type=str2bool,
+        help="whether to dump code index",
+    )
+    group.add_argument(
+        "--indices_save_type",
+        type=str,
+        default="text",
         help="whether to dump code index",
     )
     group.add_argument(
