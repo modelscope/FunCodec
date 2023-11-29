@@ -17,7 +17,7 @@ model_hub=modelscope
 codec_model="audio_codec-encodec-zh_en-general-16k-nq32ds640-pytorch"
 
 # training related
-train_config="conf/"
+train_config="conf/text2audio_codec_lm_nq2_uni_rel_pos.yaml"
 tag=""
 feats_dir="."
 exp_dir="."
@@ -198,17 +198,17 @@ if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
       --wav_scp "${home_dir}/${dumpdir}/${name}/wav.scp" \
       --out_dir "${home_dir}/${dumpdir}/${name}/codecs/"
 
-    cat ${home_dir}/${dumpdir}/${name}/codecs/logdir/output.*/indices.scp | sort > ${home_dir}/${dumpdir}/${name}/codec_tokens.scp
-    echo "codec scp files are collected into ${home_dir}/${dumpdir}/${name}/codec_tokens.scp"
+    cat ${home_dir}/${dumpdir}/${name}/codecs/logdir/output.*/indices.scp | sort > ${home_dir}/${dumpdir}/${name}/codec_token.scp
+    echo "codec scp files are collected into ${home_dir}/${dumpdir}/${name}/codec_token.scp"
   done
 fi
 
 # stage 5: training model
 if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
   echo "stage 5: training"
-  mkdir -p ${exp_dir}/exp/${model_dir}
-  mkdir -p ${exp_dir}/exp/${model_dir}/log
-  INIT_FILE=${exp_dir}/exp/${model_dir}/ddp_init
+  mkdir -p ${exp_dir}/${model_dir}
+  mkdir -p ${exp_dir}/${model_dir}/log
+  INIT_FILE=${exp_dir}/${model_dir}/ddp_init
   if [ -f $INIT_FILE ];then
       rm -f $INIT_FILE
   fi
@@ -219,7 +219,7 @@ if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
           rank=$i
           local_rank=$i
           gpu_id=$(echo $CUDA_VISIBLE_DEVICES | cut -d',' -f$[$i+1])
-          python -m funasr.bin.text2audio_train \
+          python -m funcodec.bin.text2audio_train \
               --gpu_id $gpu_id \
               --train_data_path_and_name_and_type ${feats_dir}/${dumpdir}/train/phoneme,text,text \
               --train_data_path_and_name_and_type ${feats_dir}/${dumpdir}/train/codec_token.scp,codec,kaldi_ark \
@@ -232,7 +232,7 @@ if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
               --token_type word \
               --ignore_init_mismatch true \
               --resume true \
-              --output_dir ${exp_dir}/exp/${model_dir} \
+              --output_dir ${exp_dir}/${model_dir} \
               --config $train_config \
               --ngpu ${ngpu} \
               --num_worker_count 1 \
@@ -240,10 +240,10 @@ if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
               --dist_init_method $init_method \
               --dist_world_size $ngpu \
               --dist_rank $rank \
-              --local_rank $local_rank 1> ${exp_dir}/exp/${model_dir}/log/train.log.$i 2>&1
+              --local_rank $local_rank 1> ${exp_dir}/${model_dir}/log/train.log.$i 2>&1
       } &
       done
-      echo "log files are "${exp_dir}/exp/${model_dir}/log/train.log.*
+      echo "log files are "${exp_dir}/${model_dir}/log/train.log.*
       wait
 fi
 
