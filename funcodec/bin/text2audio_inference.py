@@ -70,6 +70,7 @@ class Text2Audio(nn.Module):
         self.sampling = kwargs["sampling"]
         self.continual = kwargs["continual"]
         self.tokenize_to_phone = kwargs.get("tokenize_to_phone", False)
+        self.exclude_prompt = kwargs.get("exclude_prompt", True)
         if self.tokenize_to_phone:
             from funcodec.text.phoneme_tokenizer import G2p_en
             self.phoneme_tokenizer = G2p_en(no_space=True)
@@ -155,7 +156,7 @@ class Text2Audio(nn.Module):
             text = " ".join([prompt_text, text]).strip()
             codec = self.codec_model(prompt_audio, run_mod="encode")[0][0].squeeze(1).transpose(0,1)
             continual = codec[:self.continual, :self.model.predict_nq].tolist()
-            continual_length = len(continual)
+            continual_length = len(continual) if self.exclude_prompt else 0
         else:
             continual = None
             continual_length = None
@@ -521,6 +522,12 @@ def get_parser():
         "--tokenize_to_phone",
         type=str2bool,
         default=False,
+        help="whether tokenize the input text into phoneme sequence."
+    )
+    group.add_argument(
+        "--exclude_prompt",
+        type=str2bool,
+        default=True,
         help="whether tokenize the input text into phoneme sequence."
     )
 
