@@ -799,5 +799,39 @@ class FreqCodec(AbsGANESPnetModel):
         )
         return retval
 
+    def inference_decoding_emb(
+            self,
+            token_idx: torch.Tensor,
+            need_recon: bool = True,
+            bit_width: int = None,
+            use_scale: bool = True,
+    ) -> Dict[str, torch.Tensor]:
+        """Run inference.
+
+        Args:
+            token_idx (torch.Tensor): input code embeddings, B x T x Dim
+            need_recon (bool): whether to return recon speech
+            bit_width (int): The excepted bandwidth
+            use_scale (bool): whether to use scale
+
+        Returns:
+            Dict[str, Tensor]:
+                * recon_speech (Tensor): Reconstructed waveform tensor (T_wav,).
+                * code_indices (Tensor): quantized code indices (L)
+                * code_embeddings (Tensor): quantized code embeddings (L, d).
+
+        """
+        codes = [(token_idx, None)]
+        recon_speech = None
+        if need_recon:
+            recon_speech = self._decode(codes)
+        retval = dict(
+            recon_speech=recon_speech,
+            code_indices=None,
+            code_embeddings=codes,
+            sub_quants=None
+        )
+        return retval
+
     def collect_feats(self, **batch: torch.Tensor) -> Dict[str, torch.Tensor]:
         pass
