@@ -71,6 +71,7 @@ if [ ${stage} -eq 2 ]; then
     --codec_model_file exp/${codec_model}/model.pth \
     --sampling 25 \
     --continual 25 \
+    --exclude_prompt false \
     --log_level warning \
     --raw_inputs "${text}" \
     --raw_inputs "${prompt_text}" \
