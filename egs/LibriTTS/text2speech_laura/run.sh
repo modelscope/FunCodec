@@ -218,7 +218,7 @@ if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
       {
           rank=$i
           local_rank=$i
-          gpu_id=$(echo $CUDA_VISIBLE_DEVICES | cut -d',' -f$[$i+1])
+          gpu_id=$(echo $gpu_devices | cut -d',' -f$[$i+1])
           python -m funcodec.bin.text2audio_train \
               --gpu_id $gpu_id \
               --train_data_path_and_name_and_type ${feats_dir}/${dumpdir}/train/phoneme,text,text \

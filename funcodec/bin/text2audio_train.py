@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import os
-
+import torch
 from funcodec.tasks.text2audio_generation import Text2AudioGenTask
 
 
@@ -33,6 +33,8 @@ if __name__ == '__main__':
 
     # setup local gpu_id
     os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu_id)
+    if torch.__version__ >= "1.10":
+        torch.cuda.set_device(int(args.gpu_id))
 
     # DDP settings
     if args.ngpu > 1:
