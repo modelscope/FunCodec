@@ -14,8 +14,8 @@ def main():
     out_file = open(out_file, "wt", encoding="utf-8")
     content = open(in_file, "rt").readlines()
     for line in tqdm.tqdm(content, total=len(content)):
-        key = os.path.basename(line.strip()).split(".", maxsplit=1)[0]
-        text = open(line.strip(), "rt").readlines()[0]
+        key, file_path = line.strip().split(maxsplit=1)
+        text = open(file_path, "rt").readlines()[0]
         phoneme_list = g2p(text)
         # filter out other symbols
         phoneme_list = list(filter(lambda s: s != " " and s.isalnum(), phoneme_list))
