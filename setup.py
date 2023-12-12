@@ -37,22 +37,20 @@ requirements = {
         "pytorch_wpe",
         "editdistance==0.5.2",
         "tensorboard>=1.15",
-        "numpy==1.23.5",
-        "numba==0.56.4",
         "g2p",
         # PAI
         "oss2",
         # codec
         "local-attention",
-        "einops",
-        "thop==0.1.1.post2209072238",
-        "alias-free-torch==0.0.6",
-        "phaseaug==1.0.1"
+        "einops>=0.6.0",
+        "thop>=0.1.1.post2209072238",
+        "alias-free-torch>=0.0.6",
+        "phaseaug>=1.0.1"
     ],
     # train: The modules invoked when training only.
     "train": [
         # "pillow>=6.1.0",
-        "editdistance==0.5.2",
+        "editdistance>=0.5.2",
         "wandb",
     ],
     # recipe: The modules actually are not invoked in the main module of funcodec,
@@ -80,10 +78,15 @@ requirements = {
         "torch_optimizer",
         "fairscale",
         "transformers",
+        "torch>=1.12",
+        "torch-complex>=0.4.3",
+        "torchaudio>=0.12.0",
+        "torchvision>=0.13.0",
+        "numpy>=1.23.5",
+        "numba>=0.56.4",
         # "gtn==0.0.0",
     ],
     "setup": [
-        "numpy<=1.21.3",
         "pytest-runner",
     ],
     "test": [

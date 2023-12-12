@@ -7,23 +7,23 @@ stage=1
 stop_stage=1
 
 # data related
-corpus_dir=corpus/LibriTTS
-dumpdir=dump/libritts
-state_dir=exp/libritts_states
+corpus_dir=corpus/Jamendo
+dumpdir=dump/jamendo
+state_dir=exp/jamendo_states
 
 # pre-trained related
 model_name=
 model_hub=modelscope
-codec_model="audio_codec-encodec-zh_en-general-16k-nq32ds640-pytorch"
+codec_model="audio_codec-freqcodec-universal-general-16k-nq32ds640-pytorch"
 
 # training related
 train_config="conf/text2audio_codec_lm_nq2_uni_rel_pos.yaml"
-tag="_phoneme_libritts"
+tag="_t5_enc_jamendo"
 feats_dir="."
 exp_dir="."
 
 # inference related
-text_scp=
+text_scp=text
 out_dir=
 njob=1   # nj per GPU or all nj for CPU
 gpu_devices="6,7"
@@ -96,87 +96,67 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
   fi
 
   echo "download training set to ${corpus_dir}"
-  wget --no-check-certificate https://www.openslr.org/resources/60/train-clean-100.tar.gz -P ${corpus_dir}/
-  wget --no-check-certificate https://www.openslr.org/resources/60/train-clean-360.tar.gz -P ${corpus_dir}/
-  wget --no-check-certificate https://www.openslr.org/resources/60/train-other-500.tar.gz -P ${corpus_dir}/
-
-  echo "download dev set to ${corpus_dir}"
-  wget --no-check-certificate https://www.openslr.org/resources/60/dev-clean.tar.gz -P ${corpus_dir}/
-  wget --no-check-certificate https://www.openslr.org/resources/60/dev-other.tar.gz -P ${corpus_dir}/
-
-  echo "download test set to ${corpus_dir}"
-  wget --no-check-certificate https://www.openslr.org/resources/60/test-clean.tar.gz -P ${corpus_dir}/
-  wget --no-check-certificate https://www.openslr.org/resources/60/test-other.tar.gz -P ${corpus_dir}/
-
-  cd ${corpus_dir}/
-  tar zxf train-clean-100.tar.gz train-clean-360.tar.gz train-other-500.tar.gz
-  tar zxf dev-clean.tar.gz dev-other.tar.gz
-  tar zxf test-clean.tar.gz test-other.tar.gz
-
-  # remove the duplicated LibriTTS directory
-  mv ${corpus_dir}/LibriTTS/* ${corpus_dir}/
-  rm -rf ${corpus_dir}/LibriTTS
+  cd ${corpus_dir}
+  git clone https://github.com/MTG/mtg-jamendo-dataset.git
+  cd mtg-jamendo-dataset
+  pip install -r scripts/requirements.txt
+  python3 scripts/download/download.py \
+    --dataset raw_30s \
+    --type audio --unpack --remove \
+    ./Jamendo
 fi
 
-# Data collecting
+# Data collecting and conversion
 if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
-  echo "Stage 2: collecting data sets."
-  mkdir -p ${dumpdir}/train_24k ${dumpdir}/dev_24k
+  echo "Stage 2: convert mp3 files into waveform files."
+  data_dir=${dumpdir}/all
+  mkdir -p ${data_dir}
+  find ${corpus_dir}/mtg-jamendo-dataset/Jamendo -iname "*.mp3" | sort > ${data_dir}/mp3.flist
+  while IFS= read -r line; do
+    mp3_file=$(echo "$line" | awk '{print $2}')
+    wav_file=$(echo "${mp3_file}" | sed "s:.mp3:.wav:g")
+    ffmpeg -i "${mp3_file}" -acodec pcm_s16le -ac 1 -ar 16000 -nostdin "${wav_file}" 1>> ${data_dir}/convert.log 2>&1
+  done < "${data_dir}/mp3.flist"
 
-  for name in train-clean-100 train-clean-360 train-other-500; do
-    echo "collecting ${name} in to ${dumpdir}/train_24k"
-    find ${corpus_dir}/${name}/ -iname "*.wav" | awk -F '[/.]' '{print $(NF-1), $0}' | sort >> ${dumpdir}/train_24k/wav.scp
-    find ${corpus_dir}/${name}/ -iname "*.normalized.txt" | awk -F '[/.]' '{print $(NF-2),$0}' | sort >> ${dumpdir}/train_24k/normalized_txt.flist
-  done
+  find ${corpus_dir}/mtg-jamendo-dataset/Jamendo -iname "*.wav" | sort | awk -F'[/.]' '{print $(NF-1),$0}' > ${data_dir}/reco.scp
 
-  for name in dev-clean dev-other; do
-    echo "collecting ${name} in to ${dumpdir}/dev_24k"
-    find ${corpus_dir}/${name}/ -iname "*.wav" | awk -F '[/.]' '{print $(NF-1), $0}' | sort >> ${dumpdir}/dev_24k/wav.scp
-    find ${corpus_dir}/${name}/ -iname "*.normalized.txt" | awk -F '[/.]' '{print $(NF-2),$0}' | sort >> ${dumpdir}/dev_24k/normalized_txt.flist
-  done
-
-  for name in test-clean test-other; do
-    mkdir -p ${dumpdir}/${name}_24k
-    echo "collecting ${name} in to ${dumpdir}/${name}_24k"
-    find ${corpus_dir}/${name}/ -iname "*.wav" | awk -F '[/.]' '{print $(NF-1), $0}' | sort > ${dumpdir}/${name}_24k/wav.scp
-    find ${corpus_dir}/${name}/ -iname "*.normalized.txt" | awk -F '[/.]' '{print $(NF-2),$0}' | sort >> ${dumpdir}/${name}_24k/normalized_txt.flist
-  done
+  head -n1 ${corpus_dir}/mtg-jamendo-dataset/data/raw_30s.tsv >> ${data_dir}/tag.tsv
+  cat ${corpus_dir}/mtg-jamendo-dataset/data/raw_30s.tsv | grep genre | grep instrument | grep "mood/theme" >> ${data_dir}/tag.tsv
+  python scripts/preprocess_jamendo_tsv.py \
+    --tsv_file ${data_dir}/tag.tsv \
+    --out_file ${data_dir}/tag.scp
 fi
 
-# Dump data to ark and convert it to the sampling rate of 16000
+# data preprocess
 if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
-  echo "Stage 3: Dump data to ark."
-  for name in train dev; do
-    echo "Dump ${name} set to ark files ${dumpdir}/${name}/arks/wav.*.ark"
-    torchrun --nproc_per_node=32 --master_port=1234 scripts/dump_to_wav_ark.py \
-      --wav_scp ${dumpdir}/${name}_24k/wav.scp \
-      --out_dir ${dumpdir}/${name}/arks \
-      --sample_rate 16000
+  echo "Stage 3: Data preprocessing"
+  echo "Stage 3-1: clip recordings into 10s segments"
+  data_dir=${dumpdir}/all
+  torchrun --nproc_per_node=32 --master_port=62211 \
+    scripts/clip_audio_to_seg.py \
+    --wav_scp ${data_dir}/reco.scp \
+    --seg_dur 10.0 \
+    --out_dir ${corpus_dir}/mtg-jamendo-dataset/Jamendo/clips_10s
+  cat ${corpus_dir}/mtg-jamendo-dataset/Jamendo/clips_10s/part*.scp | sort > ${data_dir}/all_wav_clips.scp
 
-    mkdir -p ${dumpdir}/${name} exp/${state_dir}/${name}
-    cat ${dumpdir}/${name}/arks/wav.*.scp | sort > ${dumpdir}/${name}/wav.scp
-    cat ${dumpdir}/${name}/arks/length.*.txt | shuf | awk '{print $1,int($2/640)}' > exp/${state_dir}/${name}/codec_shape
+  echo "Stage 3-2: filtering out segments without full tag"
+  python scripts/filter_wav_by_tag_scp.py \
+    --wav_scp ${data_dir}/all_wav_clips.scp \
+    --tag_scp ${data_dir}/tag.scp \
+    --out_dir ${data_dir}
 
-    echo "Collect and tokenize text files of ${name} into one phoneme file"
-    python scripts/collect_text_flist_to_phone_scp.py \
-      ${dumpdir}/${name}_24k/normalized_txt.flist \
-      ${dumpdir}/${name}/phoneme
-  done
+  echo "Stage 3-3: split train, dev and test subsets"
+  awk '{print $1}' ${data_dir}/wav.scp | shuf > ${data_dir}/uttids
 
-  for name in test-clean test-other; do
-    echo "Resample ${name} set to ${dumpdir}/${name}/wavs/*.wav"
-    torchrun --nproc_per_node=32 --master_port=1234 scripts/convert_to_wav.py \
-      --wav_scp ${dumpdir}/${name}_24k/wav.scp \
-      --out_dir ${dumpdir}/${name}/wavs \
-      --sample_rate 16000
+  mkdir -p ${dumpdir}/{train,dev,test}
 
-    mkdir -p ${dumpdir}/${name}
-    find ${dumpdir}/${name}/wavs/ -iname "*.wav" | awk -F '/' '{print $NF, $0}' | sort >> ${dumpdir}/${name}/wav.scp
-
-    echo "Collect and tokenize text files of ${name} into one phoneme file"
-    python scripts/collect_text_flist_to_phone_scp.py \
-      ${dumpdir}/${name}_24k/nomalized_txt.flist \
-      ${dumpdir}/${name}/phoneme
+  total_lines=$(cat ${dumpdir}/all/uttids | wc -l)
+  head -n $(( total_lines - 2000 )) ${dumpdir}/all/uttids | sort > ${dumpdir}/train/uttids
+  tail -n 2000 ${dumpdir}/all/uttids | head -n 1000 | sort > ${dumpdir}/dev/uttids
+  tail -n 1000 ${dumpdir}/all/uttids | sort > ${dumpdir}/test/uttids
+  for name in train dev test; do
+    awk '{if (NR==FNR){a[$1]=1}else{if (a[$1]==1){print $0}}}' ${dumpdir}/${name}/uttids ${dumpdir}/all/wav.scp > ${dumpdir}/${name}/wav.scp
+    awk '{if (NR==FNR){a[$1]=1}else{if (a[$1]==1){print $0}}}' ${dumpdir}/${name}/uttids ${dumpdir}/all/text > ${dumpdir}/${name}/text
   done
 fi
 
@@ -184,8 +164,8 @@ fi
 if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
   echo "stage 4: Extract codecs"
   home_dir=$(pwd)
-  cd ../codec
-  for name in train dev test-clean test-other; do
+  cd ../../LibriTTS/codec
+  for name in train dev test; do
     echo "extracting codec for ${name}"
     sh encoding_decoding.sh --stage 1 \
       --gpu_devices ${gpu_devices} \
@@ -197,9 +177,24 @@ if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
       --model_dir "${home_dir}/exp/${codec_model}" \
       --wav_scp "${home_dir}/${dumpdir}/${name}/wav.scp" \
       --out_dir "${home_dir}/${dumpdir}/${name}/codecs/"
-
     cat ${home_dir}/${dumpdir}/${name}/codecs/logdir/output.*/indices.scp | sort > ${home_dir}/${dumpdir}/${name}/codec_token.scp
     echo "codec scp files are collected into ${home_dir}/${dumpdir}/${name}/codec_token.scp"
+
+    mkdir -p "${home_dir}/${state_dir}/${name}"
+    awk '{print $1,250}' ${home_dir}/${dumpdir}/${name}/codec_token.scp > ${home_dir}/${state_dir}/${name}/codec_shape
+  done
+
+  for name in train dev test; do
+    echo "extracting text embeddings for ${name}"
+    torchrun --nproc_per_node=${inference_nj} --master_port=62211 \
+      --text "${home_dir}/${dumpdir}/${name}/text" \
+      --gpu_list ${gpu_devices} \
+      --nlp_model "./exp/t5-base" \
+      --emb_type "enc" \
+      --out_dir "${home_dir}/${dumpdir}/${name}/t5_embeddings"
+
+    cat ${home_dir}/${dumpdir}/${name}/t5_embeddings/part*.scp | sort > ${home_dir}/${dumpdir}/${name}/text_emb.scp
+    echo "text embeddings are collected into ${home_dir}/${dumpdir}/${name}/text_emb.scp"
   done
 fi
 
@@ -221,15 +216,13 @@ if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
           gpu_id=$(echo $gpu_devices | cut -d',' -f$[$i+1])
           python -m funcodec.bin.text2audio_train \
               --gpu_id $gpu_id \
-              --train_data_path_and_name_and_type ${feats_dir}/${dumpdir}/train/phoneme,text,text \
+              --train_data_path_and_name_and_type ${feats_dir}/${dumpdir}/train/text_emb.scp,text,kaldi_ark \
               --train_data_path_and_name_and_type ${feats_dir}/${dumpdir}/train/codec_token.scp,codec,kaldi_ark \
               --train_shape_file ${feats_dir}/${state_dir}/train/codec_shape \
-              --valid_data_path_and_name_and_type ${feats_dir}/${dumpdir}/dev/phoneme,text,text \
+              --valid_data_path_and_name_and_type ${feats_dir}/${dumpdir}/dev/text_emb.scp,text,kaldi_ark \
               --valid_data_path_and_name_and_type ${feats_dir}/${dumpdir}/dev/codec_token.scp,codec,kaldi_ark \
               --valid_shape_file ${feats_dir}/${state_dir}/dev/codec_shape \
               --init_param exp/${codec_model}/model.pth:quantizer.rq.model:quantizer_codebook exp/${codec_model}/model.pth:quantizer:quantizer \
-              --token_list data/en_phoneme_token.list \
-              --token_type word \
               --ignore_init_mismatch true \
               --resume true \
               --output_dir ${exp_dir}/${model_dir} \
@@ -280,8 +273,8 @@ if [ ${stage} -le 6 ] && [ ${stop_stage} -ge 6 ]; then
             --codec_config_file exp/${codec_model}/config.yaml \
             --codec_model_file exp/${codec_model}/model.pth \
             --sampling 25 \
-            --tokenize_to_phone true
+            --text_emb_model exp/t5-base
 
-    echo "Generated speeches are saved to ${_logdir}/output.*/*.wav"
+    echo "Generated audios are saved to ${_logdir}/output.*/*.wav"
 
 fi

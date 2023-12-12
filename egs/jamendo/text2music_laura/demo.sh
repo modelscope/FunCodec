@@ -48,6 +48,16 @@ if [ ! -d exp/${codec_model} ]; then
   mv ${codec_model} exp/${codec_model}
 fi
 
+if [ ! -d exp/t5-base ]; then
+  mkdir -p exp
+  git lfs install
+
+  echo "downloading t5-base model from huggingface"
+  git clone https://huggingface.co/t5-base
+
+  mv t5-base exp/t5-base
+fi
+
 if [ ${stage} -eq 1 ]; then
   python -m funcodec.bin.text2audio_inference \
     --ngpu 1 --gpuid_list ${gpuid_list} \
@@ -55,6 +65,7 @@ if [ ${stage} -eq 1 ]; then
     --model_file exp/${model_name}/model.pth \
     --codec_config_file exp/${codec_model}/config.yaml \
     --codec_model_file exp/${codec_model}/model.pth \
+    --text_emb_model exp/t5-base \
     --sampling 25 \
     --seed ${seed} \
     --log_level warning \
@@ -71,6 +82,7 @@ if [ ${stage} -eq 2 ]; then
     --model_file exp/${model_name}/model.pth \
     --codec_config_file exp/${codec_model}/config.yaml \
     --codec_model_file exp/${codec_model}/model.pth \
+    --text_emb_model exp/t5-base \
     --sampling 25 \
     --seed ${seed} \
     --continual 25 \

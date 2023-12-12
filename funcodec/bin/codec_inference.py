@@ -19,8 +19,6 @@ import kaldiio
 import numpy as np
 import torch
 import torchaudio
-from typeguard import check_argument_types
-from typeguard import check_return_type
 from einops import rearrange
 
 from funcodec.utils.cli_utils import get_commandline_args
@@ -63,7 +61,6 @@ class Speech2Token(nn.Module):
             bit_width: int = 24_000,
     ):
         super().__init__()
-        assert check_argument_types()
 
         # 1. Build model
         import yaml
@@ -103,7 +100,6 @@ class Speech2Token(nn.Module):
             token_id, token_emb, recon_speech
 
         """
-        assert check_argument_types()
         self.model.eval()
         if isinstance(speech, np.ndarray):
             speech = torch.from_numpy(speech)
@@ -178,13 +174,16 @@ def inference_modelscope(
         model_tag: Optional[str] = None,
         allow_variable_data_keys: bool = True,
         streaming: bool = False,
-        sampling_rate: int = 24_000,
-        bit_width: int = 24_000,
+        sampling_rate: int = 16_000,
+        bit_width: int = 8_000,
         param_dict: Optional[dict] = None,
         use_scale: Optional[bool] = True,
         **kwargs,
 ):
-    assert check_argument_types()
+    # param_dict is used by modelscope, kwargs is used by argparser
+    if param_dict is not None:
+        kwargs.update(param_dict)
+
     if batch_size > 1:
         logging.info(f"batch_size = {batch_size}")
     if ngpu > 1:
@@ -231,6 +230,10 @@ def inference_modelscope(
             param_dict: Optional[dict] = None,
     ):
         logging.info("param_dict: {}".format(param_dict))
+        if param_dict is not None:
+            kwargs.update(param_dict)
+        if param_dict is not None and "bit_width" in param_dict:
+            bit_width = param_dict["bit_width"]
         if data_path_and_name_and_type is None and raw_inputs is not None:
             if isinstance(raw_inputs, torch.Tensor):
                 raw_inputs = raw_inputs.numpy()
@@ -315,7 +318,7 @@ def inference_modelscope(
             if "ppg_lengths" in batch:
                 ppg_length = batch.pop("ppg_lengths")
 
-            if kwargs["stat_flops"] and not my_model.already_stat_flops:
+            if 'stat_flops' in kwargs and kwargs["stat_flops"] and not my_model.already_stat_flops:
                 rand_speech = torch.randn(1, sampling_rate, device=device, dtype=torch.float32)
                 if "ppg" in batch:
                     rand_ppg = torch.randn(1, 100, batch["ppg"].shape[-1],
