@@ -232,8 +232,6 @@ def inference_modelscope(
         logging.info("param_dict: {}".format(param_dict))
         if param_dict is not None:
             kwargs.update(param_dict)
-        if param_dict is not None and "bit_width" in param_dict:
-            bit_width = param_dict["bit_width"]
         if data_path_and_name_and_type is None and raw_inputs is not None:
             if isinstance(raw_inputs, torch.Tensor):
                 raw_inputs = raw_inputs.numpy()
@@ -334,9 +332,12 @@ def inference_modelscope(
                 logging.info(f"Model layer info: \n{layer_info}")
                 my_model.already_stat_flops = True
 
-            token_id, token_emb, recon_speech, sub_quants = my_model(**batch, need_recon=True,
-                                                                     bit_width=bit_width, use_scale=use_scale,
-                                                                     run_mod=kwargs["run_mod"])
+            token_id, token_emb, recon_speech, sub_quants = my_model(
+                **batch, need_recon=True,
+                bit_width=param_dict["bit_width"] if param_dict is not None and "bit_width" in param_dict else bit_width,
+                use_scale=use_scale,
+                run_mod=kwargs["run_mod"]
+            )
 
             if should_resample and recon_speech is not None:
                 recon_speech = torchaudio.functional.resample(
