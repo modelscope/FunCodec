@@ -336,7 +336,7 @@ def inference_modelscope(
                 **batch, need_recon=True,
                 bit_width=param_dict["bit_width"] if param_dict is not None and "bit_width" in param_dict else bit_width,
                 use_scale=use_scale,
-                run_mod=kwargs["run_mod"]
+                run_mod=kwargs.get("run_mod", "inference")
             )
 
             if should_resample and recon_speech is not None:
