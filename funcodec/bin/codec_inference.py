@@ -332,11 +332,12 @@ def inference_modelscope(
                 logging.info(f"Model layer info: \n{layer_info}")
                 my_model.already_stat_flops = True
 
+            run_mod = kwargs.get("run_mod", "inference")
             token_id, token_emb, recon_speech, sub_quants = my_model(
                 **batch, need_recon=True,
                 bit_width=param_dict["bit_width"] if param_dict is not None and "bit_width" in param_dict else bit_width,
                 use_scale=use_scale,
-                run_mod=kwargs.get("run_mod", "inference")
+                run_mod=run_mod
             )
 
             if should_resample and recon_speech is not None:
@@ -347,7 +348,7 @@ def inference_modelscope(
 
             for i, key in enumerate(keys):
                 recon_wav = None
-                if kwargs["run_mod"] in ["decode", "decode_emb"]:
+                if run_mod in ["decode", "decode_emb"]:
                     codec_len = speech_length[i]
                     ilen = codec_len * my_model.model.quantizer.encoder_hop_length
                 else:
