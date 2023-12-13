@@ -151,11 +151,11 @@ class Text2Audio(nn.Module):
             generation audios
         """
         self.model.eval()
-        continual_mode = self.continual > 0 and prompt_text is not None and prompt_audio is not None
+        continual_mode = self.continual and prompt_text is not None and prompt_audio is not None
         if continual_mode:
             text = " ".join([prompt_text, text]).strip()
             codec = self.codec_model(prompt_audio, run_mod="encode")[0][0].squeeze(1).transpose(0,1)
-            continual = codec[:self.continual, :self.model.predict_nq].tolist()
+            continual = codec[:, :self.model.predict_nq].tolist()
             continual_length = len(continual) if self.exclude_prompt else 0
         else:
             continual = None
