@@ -3,7 +3,7 @@
 . ./path.sh || exit 1;
 
 stage=1
-model_name="text2audio_codec_lm_nq2_uni_rel_pos_phoneme_libritts"
+model_name="speech_synthesizer-laura-en-libritts-16k-codec_nq2-pytorch"
 codec_model="audio_codec-encodec-zh_en-general-16k-nq32ds640-pytorch"
 model_hub=modelscope
 gpuid_list=0
