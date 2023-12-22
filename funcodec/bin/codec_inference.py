@@ -16,6 +16,7 @@ from typing import Tuple
 from typing import Union
 
 import kaldiio
+import librosa
 import numpy as np
 import torch
 import torchaudio
@@ -233,6 +234,8 @@ def inference_modelscope(
         if param_dict is not None:
             kwargs.update(param_dict)
         if data_path_and_name_and_type is None and raw_inputs is not None:
+            if isinstance(raw_inputs, str):
+                raw_inputs, sr = librosa.load(raw_inputs, sr=sampling_rate)
             if isinstance(raw_inputs, torch.Tensor):
                 raw_inputs = raw_inputs.numpy()
             data_path_and_name_and_type = [raw_inputs, "speech", "waveform"]
