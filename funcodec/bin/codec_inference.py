@@ -234,15 +234,17 @@ def inference_modelscope(
         if param_dict is not None:
             kwargs.update(param_dict)
         if data_path_and_name_and_type is None and raw_inputs is not None:
+            uttid = "utt"
             if isinstance(raw_inputs, str):
                 raw_inputs, sr = librosa.load(raw_inputs, sr=sampling_rate)
+                uttid = os.path.basename(raw_inputs).rsplit(".")[0]
             if isinstance(raw_inputs, torch.Tensor):
                 raw_inputs = raw_inputs.numpy()
             data_dict=dict(
                 speech=raw_inputs[np.newaxis, :],
                 speech_lengths=torch.tensor([raw_inputs.shape[0]], dtype=torch.int64)
             )
-            loader = [(["utt1"], data_dict)]
+            loader = [([uttid], data_dict)]
         else:
             # 3. Build data-iterator
             loader = GANSpeechCodecTask.build_streaming_iterator(
