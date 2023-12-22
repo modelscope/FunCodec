@@ -240,7 +240,7 @@ def inference_modelscope(
                 raw_inputs = raw_inputs.numpy()
             data_dict=dict(
                 speech=raw_inputs[np.newaxis, :],
-                speech_lengths=np.array([raw_inputs.shape[0]])
+                speech_lengths=torch.tensor([raw_inputs.shape[0]], dtype=torch.int64)
             )
             loader = [(["utt1"], data_dict)]
         else:
