@@ -238,7 +238,10 @@ def inference_modelscope(
                 raw_inputs, sr = librosa.load(raw_inputs, sr=sampling_rate)
             if isinstance(raw_inputs, torch.Tensor):
                 raw_inputs = raw_inputs.numpy()
-            data_dict=dict(speech=[raw_inputs])
+            data_dict=dict(
+                speech=raw_inputs[np.newaxis, :],
+                speech_lengths=np.array([raw_inputs.shape[0]])
+            )
             loader = [(["utt1"], data_dict)]
         else:
             # 3. Build data-iterator
