@@ -235,7 +235,7 @@ def inference_modelscope(
             kwargs.update(param_dict)
         if data_path_and_name_and_type is None and raw_inputs is not None:
             if isinstance(raw_inputs, str):
-                raw_inputs, sr = librosa.load(raw_inputs, sr=sampling_rate)[0]
+                raw_inputs, sr = librosa.load(raw_inputs, sr=sampling_rate)
             if isinstance(raw_inputs, torch.Tensor):
                 raw_inputs = raw_inputs.numpy()
             data_dict=dict(
