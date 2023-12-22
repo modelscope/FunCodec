@@ -2,6 +2,12 @@
 
 This project is still working on progress.
 
+## News
+- 2023.12.22 🎉🎉: We release the training and inference recipes for LauraTTS as well as pre-trained models. 
+[LauraTTS](https://arxiv.org/abs/2310.04673) is a powerful codec-based zero-shot text-to-speech synthesizer, 
+which outperforms VALL-E in terms of semantic consistency and speaker similarity.
+Please refer `egs/text2speech_laura/README.md` for more details.
+
 ## Installation
 
 ```shell
