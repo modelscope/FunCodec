@@ -2,3 +2,5 @@
 .idea
 .eggs
 funcodec.egg-info
+build/
+dist/
