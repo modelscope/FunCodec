@@ -238,24 +238,25 @@ def inference_modelscope(
                 raw_inputs, sr = librosa.load(raw_inputs, sr=sampling_rate)
             if isinstance(raw_inputs, torch.Tensor):
                 raw_inputs = raw_inputs.numpy()
-            data_path_and_name_and_type = [raw_inputs, "speech", "waveform"]
-
-        # 3. Build data-iterator
-        loader = GANSpeechCodecTask.build_streaming_iterator(
-            data_path_and_name_and_type,
-            dtype=dtype,
-            batch_size=batch_size,
-            key_file=key_file,
-            num_workers=num_workers,
-            preprocess_fn=None,
-            collate_fn=GANSpeechCodecTask.build_collate_fn(argparse.Namespace(
-                float_pad_value=0.0,
-                int_pad_value=0,
-                pad_mode="wrap",
-            ), False),
-            allow_variable_data_keys=allow_variable_data_keys,
-            inference=True,
-        )
+            data_dict=dict(speech=[raw_inputs])
+            loader = [(["utt1"], data_dict)]
+        else:
+            # 3. Build data-iterator
+            loader = GANSpeechCodecTask.build_streaming_iterator(
+                data_path_and_name_and_type,
+                dtype=dtype,
+                batch_size=batch_size,
+                key_file=key_file,
+                num_workers=num_workers,
+                preprocess_fn=None,
+                collate_fn=GANSpeechCodecTask.build_collate_fn(argparse.Namespace(
+                    float_pad_value=0.0,
+                    int_pad_value=0,
+                    pad_mode="wrap",
+                ), False),
+                allow_variable_data_keys=allow_variable_data_keys,
+                inference=True,
+            )
 
         output_path = output_dir_v2 if output_dir_v2 is not None else output_dir
         if output_path is not None:
