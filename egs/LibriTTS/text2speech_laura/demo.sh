@@ -71,7 +71,7 @@ if [ ${stage} -eq 2 ]; then
     --codec_config_file exp/${codec_model}/config.yaml \
     --codec_model_file exp/${codec_model}/model.pth \
     --sampling 25 \
-    --continual 250 \
+    --continual 2500 \
     --log_level warning \
     --tokenize_to_phone true \
     --raw_inputs "${text}" \

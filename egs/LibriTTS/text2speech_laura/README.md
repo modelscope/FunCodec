@@ -47,7 +47,7 @@ Take LibriTTS as an example, we introduce how to use LauraTTS to syntheize speec
 ```sh
 # entry workspace
 cd egs/LibriTTS/text2speech_laura
-model_name="audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch"
+model_name="speech_synthesizer-laura-en-libritts-16k-codec_nq2-pytorch"
 # 1. free generation, the synthesized files are saved in results dir
 bash demo.sh --stage 1 --model_name ${model_name} --output_dir results --text "nothing was to be done but to put about, and return in disappointment towards the north."
 
@@ -57,6 +57,7 @@ bash demo.sh --stage 2 --model_name ${model_name} --output_dir results --text "n
 ```
 
 ### Use ModelScope to synthesize speech
+This approach will be available after Jan, 2024.
 ```python
 from modelscope.pipelines import pipeline
 from modelscope.utils.constant import Tasks
