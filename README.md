@@ -1,6 +1,6 @@
 # FunCodec: A Fundamental, Reproducible and Integrable Open-source Toolkit for Neural Speech Codec
 
-This project is still working on progress.
+This project is still working on progress. To make FunCodec better, please let me know your concerns and feel free to comment them in the `Issues` part.
 
 ## News
 - 2023.12.22 🎉🎉: We release the training and inference recipes for LauraTTS as well as pre-trained models. 
