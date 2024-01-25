@@ -32,7 +32,7 @@ class Audio2Mel(nn.Module):
         n_mel_channels=80,
         mel_fmin=0.0,
         mel_fmax=None,
-        device='cuda'
+        device='cpu'
     ):
         super().__init__()
         ##############################################
@@ -42,7 +42,7 @@ class Audio2Mel(nn.Module):
         mel_basis = librosa_mel_fn(
             sr=sampling_rate, n_fft=n_fft, n_mels=n_mel_channels, fmin=mel_fmin, fmax=mel_fmax
         )
-        mel_basis = torch.from_numpy(mel_basis).cuda().float()
+        mel_basis = torch.from_numpy(mel_basis).to(device).float()
         self.register_buffer("mel_basis", mel_basis)
         self.register_buffer("window", window)
         self.n_fft = n_fft
